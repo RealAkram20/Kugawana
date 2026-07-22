@@ -1,12 +1,51 @@
+export type PostType = 'request' | 'offer' | 'discussion'
+
+export type FeedFilter = 'all' | PostType
+
 export interface CommunityPost {
   id: number
   content: string
+  post_type: PostType | null
+  location: string | null
   images: string[]
+  author_id: number
   author_name: string
+  profile_photo: string | null
   likes_count: number
   comments_count: number
   liked: boolean
+  time_ago: string
   created_at: string
+}
+
+export interface CreatePostPayload {
+  content: string
+  post_type: PostType
+  location?: string
+}
+
+export interface CommunityComment {
+  id: number
+  author_name: string
+  profile_photo: string | null
+  content: string
+  time_ago: string
+}
+
+export interface CommunityPostDetail {
+  id: number
+  author_id: number
+  author_name: string
+  profile_photo: string | null
+  content: string
+  images: string[]
+  post_type: PostType | null
+  location: string | null
+  time_ago: string
+  likes_count: number
+  comments_count: number
+  liked: boolean
+  comments: CommunityComment[]
 }
 
 export interface Article {

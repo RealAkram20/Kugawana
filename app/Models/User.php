@@ -29,6 +29,7 @@ class User extends Authenticatable implements FilamentUser
         'latitude',
         'longitude',
         'profile_photo',
+        'bio',
         'wallet_balance',
         'responsibility_score',
         'is_active',

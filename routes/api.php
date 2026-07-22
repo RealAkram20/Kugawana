@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommunityController;
 use App\Http\Controllers\Api\FoodController;
 use App\Http\Controllers\Api\LearnController;
+use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\WalletController;
@@ -17,6 +18,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
+
+    Route::get('/members', [MemberController::class, 'index']);
+    Route::get('/members/{member}', [MemberController::class, 'show']);
 
     Route::get('/food', [FoodController::class, 'index']);
     Route::get('/food/mine', [FoodController::class, 'mine']);
@@ -33,7 +37,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/community', [CommunityController::class, 'index']);
     Route::post('/community', [CommunityController::class, 'store']);
+    Route::get('/community/{post}', [CommunityController::class, 'show']);
     Route::post('/community/{post}/like', [CommunityController::class, 'like']);
+    Route::post('/community/{post}/comment', [CommunityController::class, 'comment']);
 
     Route::get('/learn', [LearnController::class, 'index']);
     Route::get('/learn/{article}', [LearnController::class, 'show']);

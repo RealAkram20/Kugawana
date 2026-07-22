@@ -7,7 +7,8 @@
     "loading": "Loading",
     "retry": "Retry",
     "points": "points",
-    "search": "Search"
+    "search": "Search",
+    "comingSoon": "Coming soon"
   },
   "auth": {
     "chooseLanguage": "Choose your language",
@@ -104,7 +105,19 @@
     "title": "Community",
     "placeholder": "Share something with the community",
     "post": "Post",
-    "empty": "No posts yet. Start the conversation."
+    "empty": "No posts yet. Start the conversation.",
+    "searchPlaceholder": "Search posts, people, places...",
+    "filter": {
+      "all": "All",
+      "request": "Requests",
+      "offer": "Offers",
+      "discussion": "Discussion"
+    },
+    "type": {
+      "request": "Request",
+      "offer": "Offer",
+      "discussion": "Discussion"
+    }
   },
   "learn": {
     "title": "Learn",
@@ -122,10 +135,31 @@
     "title": "Profile",
     "myDonations": "My donations",
     "myRequests": "My requests",
+    "sharedFood": "My Shared Food",
+    "itemsCount": "{{count}} items",
+    "requestsCount": "{{count}} requests",
+    "settings": "Settings",
+    "help": "Help & Support",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to log out?",
     "wallet": "Wallet",
     "language": "Language",
     "signOut": "Sign out",
-    "score": "Responsibility score"
+    "score": "Responsibility score",
+    "settingsTitle": "Settings",
+    "account": "Account",
+    "editProfile": "Edit profile",
+    "notifications": "Notifications",
+    "preferences": "Preferences",
+    "privacy": "Privacy & security",
+    "about": "About Kugawana",
+    "version": "Version",
+    "helpTitle": "Help & Support",
+    "faq": "Frequently asked questions",
+    "contactUs": "Contact us",
+    "reportProblem": "Report a problem",
+    "terms": "Terms & privacy policy",
+    "helpIntro": "We're here to help. Reach out any time and our team will get back to you."
   },
   "orders": {
     "all": "All",
@@ -133,5 +167,72 @@
     "accepted": "Accepted",
     "completed": "Completed",
     "empty": "No requests yet"
+  },
+  "postDetail": {
+    "title": "Community Post Detail",
+    "in": "in",
+    "comments": "Comments",
+    "reply": "Reply",
+    "writeComment": "Write a comment...",
+    "you": "You",
+    "now": "now",
+    "types": {
+      "request": "Requests",
+      "offer": "Offers",
+      "discussion": "Discussion"
+    }
+  },
+  "createPost": {
+    "title": "Create Post",
+    "postType": "Post Type",
+    "request": "Request",
+    "offer": "Offer",
+    "discussion": "Discussion",
+    "needLabel": "What do you need?",
+    "needPlaceholder": "E.g. Rice, Tomatoes, Cooking oil...",
+    "offerLabel": "What are you offering?",
+    "offerPlaceholder": "E.g. Rice, Vegetables, Bread...",
+    "topicLabel": "What's on your mind?",
+    "topicPlaceholder": "Share something with the community...",
+    "quantity": "Quantity",
+    "quantityPlaceholder": "E.g. 2 kg, 1 Litre...",
+    "location": "Location",
+    "details": "Details (optional)",
+    "detailsPlaceholder": "Add any additional details...",
+    "post": "Post",
+    "lookingFor": "Looking for",
+    "offering": "Offering",
+    "titleRequired": "Please fill in the title first.",
+    "posted": "Your post has been shared.",
+    "postFailed": "Could not post right now. Please try again."
+  },
+  "communitySettings": {
+    "title": "Community Settings",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "privacyValue": "Everyone",
+    "blockedUsers": "Blocked Users",
+    "guidelines": "Community Guidelines",
+    "reportPost": "Report Post",
+    "leave": "Leave Community",
+    "leaveConfirm": "Are you sure you want to leave this community?",
+    "next": "Next"
+  },
+  "members": {
+    "title": "Community Members",
+    "searchPlaceholder": "Search members...",
+    "message": "Message"
+  },
+  "member": {
+    "title": "Member Profile",
+    "foodProvider": "Food Provider",
+    "foodReceiver": "Food Receiver",
+    "reviews": "reviews",
+    "posts": "Posts",
+    "shared": "Shared",
+    "helped": "Helped",
+    "about": "About",
+    "recentActivity": "Recent Activity",
+    "active": "Active"
   }
 }

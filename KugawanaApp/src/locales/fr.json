@@ -7,7 +7,8 @@
     "loading": "Chargement",
     "retry": "Réessayer",
     "points": "points",
-    "search": "Rechercher"
+    "search": "Rechercher",
+    "comingSoon": "Bientôt disponible"
   },
   "auth": {
     "chooseLanguage": "Choisissez votre langue",
@@ -104,7 +105,19 @@
     "title": "Communauté",
     "placeholder": "Partagez quelque chose avec la communauté",
     "post": "Publier",
-    "empty": "Pas encore de publications. Lancez la conversation."
+    "empty": "Pas encore de publications. Lancez la conversation.",
+    "searchPlaceholder": "Rechercher publications, personnes, lieux...",
+    "filter": {
+      "all": "Toutes",
+      "request": "Demandes",
+      "offer": "Offres",
+      "discussion": "Discussion"
+    },
+    "type": {
+      "request": "Demande",
+      "offer": "Offre",
+      "discussion": "Discussion"
+    }
   },
   "learn": {
     "title": "Apprendre",
@@ -122,10 +135,31 @@
     "title": "Profil",
     "myDonations": "Mes dons",
     "myRequests": "Mes demandes",
+    "sharedFood": "Ma nourriture partagée",
+    "itemsCount": "{{count}} articles",
+    "requestsCount": "{{count}} demandes",
+    "settings": "Paramètres",
+    "help": "Aide et support",
+    "logout": "Déconnexion",
+    "logoutConfirm": "Voulez-vous vraiment vous déconnecter ?",
     "wallet": "Portefeuille",
     "language": "Langue",
     "signOut": "Se déconnecter",
-    "score": "Score de responsabilité"
+    "score": "Score de responsabilité",
+    "settingsTitle": "Paramètres",
+    "account": "Compte",
+    "editProfile": "Modifier le profil",
+    "notifications": "Notifications",
+    "preferences": "Préférences",
+    "privacy": "Confidentialité et sécurité",
+    "about": "À propos de Kugawana",
+    "version": "Version",
+    "helpTitle": "Aide et support",
+    "faq": "Questions fréquentes",
+    "contactUs": "Nous contacter",
+    "reportProblem": "Signaler un problème",
+    "terms": "Conditions et confidentialité",
+    "helpIntro": "Nous sommes là pour vous aider. Contactez-nous à tout moment et notre équipe vous répondra."
   },
   "orders": {
     "all": "Toutes",
@@ -133,5 +167,72 @@
     "accepted": "Acceptées",
     "completed": "Terminées",
     "empty": "Pas encore de demandes"
+  },
+  "postDetail": {
+    "title": "Détail de la publication",
+    "in": "dans",
+    "comments": "Commentaires",
+    "reply": "Répondre",
+    "writeComment": "Écrire un commentaire...",
+    "you": "Vous",
+    "now": "à l'instant",
+    "types": {
+      "request": "Demandes",
+      "offer": "Offres",
+      "discussion": "Discussion"
+    }
+  },
+  "createPost": {
+    "title": "Créer une publication",
+    "postType": "Type de publication",
+    "request": "Demande",
+    "offer": "Offre",
+    "discussion": "Discussion",
+    "needLabel": "De quoi avez-vous besoin ?",
+    "needPlaceholder": "Ex. Riz, Tomates, Huile...",
+    "offerLabel": "Que proposez-vous ?",
+    "offerPlaceholder": "Ex. Riz, Légumes, Pain...",
+    "topicLabel": "À quoi pensez-vous ?",
+    "topicPlaceholder": "Partagez quelque chose avec la communauté...",
+    "quantity": "Quantité",
+    "quantityPlaceholder": "Ex. 2 kg, 1 litre...",
+    "location": "Lieu",
+    "details": "Détails (facultatif)",
+    "detailsPlaceholder": "Ajoutez des détails supplémentaires...",
+    "post": "Publier",
+    "lookingFor": "Recherche",
+    "offering": "Propose",
+    "titleRequired": "Veuillez d'abord remplir le titre.",
+    "posted": "Votre publication a été partagée.",
+    "postFailed": "Impossible de publier pour le moment. Réessayez."
+  },
+  "communitySettings": {
+    "title": "Paramètres de la communauté",
+    "notifications": "Notifications",
+    "privacy": "Confidentialité",
+    "privacyValue": "Tout le monde",
+    "blockedUsers": "Utilisateurs bloqués",
+    "guidelines": "Règles de la communauté",
+    "reportPost": "Signaler une publication",
+    "leave": "Quitter la communauté",
+    "leaveConfirm": "Voulez-vous vraiment quitter cette communauté ?",
+    "next": "Suivant"
+  },
+  "members": {
+    "title": "Membres de la communauté",
+    "searchPlaceholder": "Rechercher des membres...",
+    "message": "Message"
+  },
+  "member": {
+    "title": "Profil du membre",
+    "foodProvider": "Fournisseur de nourriture",
+    "foodReceiver": "Bénéficiaire",
+    "reviews": "avis",
+    "posts": "Publications",
+    "shared": "Partagés",
+    "helped": "Aidés",
+    "about": "À propos",
+    "recentActivity": "Activité récente",
+    "active": "Actif"
   }
 }

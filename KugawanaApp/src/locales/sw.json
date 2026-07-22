@@ -7,7 +7,8 @@
     "loading": "Inapakia",
     "retry": "Jaribu tena",
     "points": "pointi",
-    "search": "Tafuta"
+    "search": "Tafuta",
+    "comingSoon": "Inakuja hivi karibuni"
   },
   "auth": {
     "chooseLanguage": "Chagua lugha yako",
@@ -104,7 +105,19 @@
     "title": "Jamii",
     "placeholder": "Shiriki jambo na jamii",
     "post": "Chapisha",
-    "empty": "Hakuna machapisho bado. Anza mazungumzo."
+    "empty": "Hakuna machapisho bado. Anza mazungumzo.",
+    "searchPlaceholder": "Tafuta machapisho, watu, maeneo...",
+    "filter": {
+      "all": "Zote",
+      "request": "Maombi",
+      "offer": "Matoleo",
+      "discussion": "Majadiliano"
+    },
+    "type": {
+      "request": "Ombi",
+      "offer": "Toleo",
+      "discussion": "Majadiliano"
+    }
   },
   "learn": {
     "title": "Jifunze",
@@ -122,10 +135,31 @@
     "title": "Wasifu",
     "myDonations": "Michango yangu",
     "myRequests": "Maombi yangu",
+    "sharedFood": "Chakula Nilichoshiriki",
+    "itemsCount": "vitu {{count}}",
+    "requestsCount": "maombi {{count}}",
+    "settings": "Mipangilio",
+    "help": "Msaada",
+    "logout": "Toka",
+    "logoutConfirm": "Una uhakika unataka kutoka?",
     "wallet": "Pochi",
     "language": "Lugha",
     "signOut": "Toka",
-    "score": "Alama ya uwajibikaji"
+    "score": "Alama ya uwajibikaji",
+    "settingsTitle": "Mipangilio",
+    "account": "Akaunti",
+    "editProfile": "Hariri wasifu",
+    "notifications": "Arifa",
+    "preferences": "Mapendeleo",
+    "privacy": "Faragha na usalama",
+    "about": "Kuhusu Kugawana",
+    "version": "Toleo",
+    "helpTitle": "Msaada",
+    "faq": "Maswali yanayoulizwa mara kwa mara",
+    "contactUs": "Wasiliana nasi",
+    "reportProblem": "Ripoti tatizo",
+    "terms": "Masharti na faragha",
+    "helpIntro": "Tuko hapa kukusaidia. Wasiliana nasi wakati wowote na timu yetu itakujibu."
   },
   "orders": {
     "all": "Zote",
@@ -133,5 +167,72 @@
     "accepted": "Zimekubaliwa",
     "completed": "Zimekamilika",
     "empty": "Hakuna maombi bado"
+  },
+  "postDetail": {
+    "title": "Maelezo ya Chapisho",
+    "in": "katika",
+    "comments": "Maoni",
+    "reply": "Jibu",
+    "writeComment": "Andika maoni...",
+    "you": "Wewe",
+    "now": "sasa",
+    "types": {
+      "request": "Maombi",
+      "offer": "Matoleo",
+      "discussion": "Majadiliano"
+    }
+  },
+  "createPost": {
+    "title": "Unda Chapisho",
+    "postType": "Aina ya Chapisho",
+    "request": "Ombi",
+    "offer": "Toleo",
+    "discussion": "Majadiliano",
+    "needLabel": "Unahitaji nini?",
+    "needPlaceholder": "Mf. Mchele, Nyanya, Mafuta...",
+    "offerLabel": "Unatoa nini?",
+    "offerPlaceholder": "Mf. Mchele, Mboga, Mkate...",
+    "topicLabel": "Unafikiria nini?",
+    "topicPlaceholder": "Shiriki jambo na jamii...",
+    "quantity": "Kiasi",
+    "quantityPlaceholder": "Mf. kg 2, lita 1...",
+    "location": "Mahali",
+    "details": "Maelezo (hiari)",
+    "detailsPlaceholder": "Ongeza maelezo ya ziada...",
+    "post": "Chapisha",
+    "lookingFor": "Ninatafuta",
+    "offering": "Ninatoa",
+    "titleRequired": "Tafadhali jaza kichwa kwanza.",
+    "posted": "Chapisho lako limeshirikiwa.",
+    "postFailed": "Imeshindwa kuchapisha sasa. Jaribu tena."
+  },
+  "communitySettings": {
+    "title": "Mipangilio ya Jamii",
+    "notifications": "Arifa",
+    "privacy": "Faragha",
+    "privacyValue": "Kila mtu",
+    "blockedUsers": "Watumiaji Waliozuiwa",
+    "guidelines": "Miongozo ya Jamii",
+    "reportPost": "Ripoti Chapisho",
+    "leave": "Ondoka kwenye Jamii",
+    "leaveConfirm": "Una uhakika unataka kuondoka kwenye jamii hii?",
+    "next": "Endelea"
+  },
+  "members": {
+    "title": "Wanachama wa Jamii",
+    "searchPlaceholder": "Tafuta wanachama...",
+    "message": "Ujumbe"
+  },
+  "member": {
+    "title": "Wasifu wa Mwanachama",
+    "foodProvider": "Mtoaji wa Chakula",
+    "foodReceiver": "Mpokeaji wa Chakula",
+    "reviews": "maoni",
+    "posts": "Machapisho",
+    "shared": "Vilivyoshirikiwa",
+    "helped": "Waliosaidiwa",
+    "about": "Kuhusu",
+    "recentActivity": "Shughuli za Hivi Karibuni",
+    "active": "Inaendelea"
   }
 }
