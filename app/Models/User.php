@@ -8,6 +8,7 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -74,6 +75,21 @@ class User extends Authenticatable implements FilamentUser
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'receiver_id');
+    }
+
+    /**
+     * Ratings left on this user's donations — what their provider score is
+     * built from. Exposed as a relation so callers can withAvg/withCount it
+     * instead of querying per user.
+     */
+    public function ratingsReceived(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Rating::class,
+            FoodDonation::class,
+            'donor_id',
+            'food_donation_id',
+        );
     }
 
     public function walletTopups(): HasMany

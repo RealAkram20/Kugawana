@@ -1,76 +1,111 @@
 import { useQuery } from '@tanstack/react-query'
-import { Stack } from 'expo-router'
+import { router, Stack } from 'expo-router'
+import { ArrowLeft } from 'lucide-react-native'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlatList, StyleSheet, Text, View } from 'react-native'
-import { Badge } from '../../components/ui/Badge'
-import { Card } from '../../components/ui/Card'
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { ListingCard } from '../../components/ui/ListingCard'
+import { UnderlineTabs } from '../../components/ui/UnderlineTabs'
 import { colors } from '../../constants/colors'
+import { statusLabelKey, statusTone } from '../../constants/foodStatus'
 import { spacing } from '../../constants/spacing'
 import { foodService } from '../../services/food.service'
+import type { FoodListing } from '../../types/food.types'
 
-export default function MyDonationsScreen() {
+type Tab = 'all' | 'active' | 'completed'
+
+const TABS: Tab[] = ['all', 'active', 'completed']
+
+export default function MySharedFoodScreen() {
   const { t } = useTranslation()
-  const { data: donations } = useQuery({
+  const [tab, setTab] = useState<Tab>('all')
+
+  const { data: donations, isRefetching, refetch } = useQuery({
     queryKey: ['my-donations'],
     queryFn: () => foodService.myDonations(),
   })
 
+  // The list is a user's own donations, so it stays small enough to filter
+  // on the client and keep tab switching instant.
+  const visible = useMemo(() => {
+    const all = donations ?? []
+    if (tab === 'active') return all.filter((item) => item.is_active)
+    if (tab === 'completed') return all.filter((item) => item.status === 'completed')
+    return all
+  }, [donations, tab])
+
+  const back = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))
+
+  const renderItem = ({ item }: { item: FoodListing }) => (
+    <ListingCard
+      image={item.images[0] ?? null}
+      title={item.title}
+      subtitle={item.quantity}
+      location={item.pickup_address}
+      time={item.time_ago}
+      statusLabel={t(statusLabelKey(item))}
+      tone={statusTone(item)}
+      onPress={() => router.push({ pathname: '/food/shared/[id]', params: { id: item.id } })}
+    />
+  )
+
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('profile.myDonations') }} />
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={styles.header}>
+        <Pressable hitSlop={12} onPress={back}>
+          <ArrowLeft size={28} color={colors.textPrimary} strokeWidth={2.2} />
+        </Pressable>
+        <Text style={styles.headerTitle}>{t('profile.sharedFood')}</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <UnderlineTabs
+        tabs={TABS.map((key) => ({ key, label: t(`sharedFood.tabs.${key}`) }))}
+        value={tab}
+        onChange={setTab}
+      />
+
       <FlatList
-        data={donations ?? []}
+        data={visible}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <Card style={styles.card}>
-            <View style={styles.row}>
-              <View style={styles.left}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.meta}>
-                  {item.category?.name ?? ''} · {item.quantity}
-                </Text>
-              </View>
-              <Badge
-                label={item.status}
-                tone={item.status === 'published' ? 'primary' : item.status === 'rejected' ? 'error' : 'muted'}
-              />
-            </View>
-          </Card>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>{t('orders.empty')}</Text>}
+        renderItem={renderItem}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+        ListEmptyComponent={<Text style={styles.empty}>{t(`sharedFood.empty.${tab}`)}</Text>}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
-  list: {
-    padding: spacing.md,
-  },
-  card: {
-    marginBottom: spacing.sm,
-  },
-  row: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  left: {
+  headerTitle: {
     flex: 1,
-  },
-  title: {
-    fontSize: 15,
+    textAlign: 'center',
+    fontSize: 22,
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  meta: {
-    fontSize: 13,
-    color: colors.textSecondary,
+  headerSpacer: {
+    width: 28,
+  },
+  list: {
+    padding: spacing.md,
+    gap: spacing.md,
+    flexGrow: 1,
   },
   empty: {
     textAlign: 'center',

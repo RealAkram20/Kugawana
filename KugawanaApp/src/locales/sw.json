@@ -74,7 +74,10 @@
     "learn": "Jifunze",
     "community": "Jamii",
     "seeAll": "Ona vyote",
-    "empty": "Hakuna chakula bado. Rudi tena baadaye."
+    "empty": "Hakuna chakula bado. Rudi tena baadaye.",
+    "noNearbyFood": "Hakuna chakula kilichoshirikiwa karibu.",
+    "noPosts": "Hakuna machapisho ya jamii bado.",
+    "noArticles": "Hakuna makala bado."
   },
   "food": {
     "browse": "Tafuta chakula",
@@ -99,7 +102,25 @@
     "contact": "Namba ya mawasiliano",
     "expiry": "Tarehe ya mwisho",
     "submit": "Shiriki chakula",
-    "submitted": "Asante. Mchango wako unasubiri ukaguzi."
+    "submitted": "Asante. Mchango wako unasubiri ukaguzi.",
+    "failed": "Imeshindwa kushiriki. Tafadhali jaribu tena.",
+    "categoryRequired": "Tafadhali chagua kundi.",
+    "unit": "Kipimo",
+    "unitRequired": "Tafadhali chagua kipimo.",
+    "amountInvalid": "Tafadhali weka kiasi unachoshiriki.",
+    "amountPlaceholder": "mf. 2",
+    "photos": "Picha",
+    "addPhoto": "Ongeza picha",
+    "photosHint": "Ongeza hadi picha {{count}}. Ya kwanza ndiyo picha ya tangazo.",
+    "photosPermission": "Kugawana inahitaji ruhusa ya picha zako ili kuongeza picha.",
+    "descriptionPlaceholder": "Kuna jambo lingine watu wanapaswa kujua?",
+    "availableUntil": "Kinapatikana hadi {{when}}",
+    "windows": {
+      "today": "Baadaye leo",
+      "tomorrow": "Kesho",
+      "threeDays": "Baada ya siku 3",
+      "week": "Baada ya wiki"
+    }
   },
   "community": {
     "title": "Jamii",
@@ -129,7 +150,8 @@
     "packages": "Vifurushi vya pointi",
     "buy": "Jaza pochi",
     "history": "Historia",
-    "requested": "Ombi limetumwa. Pointi zitafika baada ya idhini."
+    "requested": "Ombi limetumwa. Pointi zitafika baada ya idhini.",
+    "pointsBalance": "pointi {{count}}"
   },
   "profile": {
     "title": "Wasifu",
@@ -166,7 +188,29 @@
     "pending": "Zinasubiri",
     "accepted": "Zimekubaliwa",
     "completed": "Zimekamilika",
-    "empty": "Hakuna maombi bado"
+    "empty": "Hakuna maombi bado",
+    "none": {
+      "all": "Hakuna maombi bado.",
+      "pending": "Hakuna maombi yanayosubiri.",
+      "accepted": "Hakuna maombi yaliyokubaliwa.",
+      "completed": "Hakuna maombi yaliyokamilika."
+    },
+    "noMore": {
+      "all": "Hakuna maombi mengine",
+      "pending": "Hakuna maombi mengine yanayosubiri",
+      "accepted": "Hakuna maombi mengine yaliyokubaliwa",
+      "completed": "Hakuna maombi mengine yaliyokamilika"
+    },
+    "cancelled": "Imeghairiwa",
+    "provider": "Mtoaji",
+    "scheduledPickup": "Muda wa Kuchukua",
+    "pickupNotSet": "Itapangwa",
+    "markCompleted": "Weka Kama Imekamilika",
+    "completeConfirm": "Thibitisha umepokea chakula hiki. Hii itafunga ombi.",
+    "completedToast": "Ombi limekamilika. Asante!",
+    "completeFailed": "Imeshindwa kukamilisha ombi hili. Tafadhali jaribu tena.",
+    "noRatings": "Hakuna ukadiriaji bado",
+    "noContact": "Mtoaji huyu hajashiriki namba ya simu."
   },
   "postDetail": {
     "title": "Maelezo ya Chapisho",
@@ -227,12 +271,124 @@
     "title": "Wasifu wa Mwanachama",
     "foodProvider": "Mtoaji wa Chakula",
     "foodReceiver": "Mpokeaji wa Chakula",
-    "reviews": "maoni",
+    "reviews": "hakiki {{count}}",
     "posts": "Machapisho",
     "shared": "Vilivyoshirikiwa",
     "helped": "Waliosaidiwa",
     "about": "Kuhusu",
     "recentActivity": "Shughuli za Hivi Karibuni",
-    "active": "Inaendelea"
+    "active": "Inaendelea",
+    "reviews_other": "hakiki {{count}}"
+  },
+  "sharedFood": {
+    "title": "Chakula Nilichoshiriki",
+    "sharedAgo": "Kilishirikiwa {{time}}",
+    "active": "Inapatikana",
+    "foodDetails": "Maelezo ya Chakula",
+    "availableUntil": "Kinapatikana Hadi",
+    "pickupLocation": "Mahali pa Kuchukua",
+    "peopleInterested": "Watu Waliopendezwa",
+    "noInterest": "Bado hakuna aliyeomba.",
+    "edit": "Hariri",
+    "save": "Hifadhi mabadiliko",
+    "saved": "Mabadiliko yamehifadhiwa.",
+    "saveFailed": "Imeshindwa kuhifadhi. Tafadhali jaribu tena.",
+    "requiredFields": "Kichwa, kiasi na mahali pa kuchukua vinahitajika.",
+    "markCompleted": "Weka Kama Imekamilika",
+    "completeConfirm": "Hii itafunga tangazo na hakuna atakayeweza kuomba. Endelea?",
+    "completed": "Imewekwa kama imekamilika. Asante kwa kushiriki!",
+    "completeFailed": "Imeshindwa kuweka kama imekamilika. Tafadhali jaribu tena.",
+    "today": "Leo, {{time}}",
+    "tomorrow": "Kesho, {{time}}",
+    "status": {
+      "pending": "Inasubiri",
+      "reviewed": "Imekaguliwa",
+      "approved": "Imeidhinishwa",
+      "collected": "Imekusanywa",
+      "stored": "Imehifadhiwa",
+      "published": "Inapatikana",
+      "reserved": "Imehifadhiwa",
+      "delivered": "Imewasilishwa",
+      "completed": "Imekamilika",
+      "rejected": "Imekataliwa",
+      "expired": "Imeisha"
+    },
+    "tabs": {
+      "all": "Zote",
+      "active": "Inapatikana",
+      "completed": "Imekamilika"
+    },
+    "empty": {
+      "all": "Bado hujashiriki chakula chochote.",
+      "active": "Hakuna kinachopatikana sasa. Shiriki chakula uanze.",
+      "completed": "Bado hakuna ulioshakamilika."
+    }
+  },
+  "requestDetail": {
+    "title": "Maelezo ya Ombi",
+    "preferredQuantity": "Kiasi Kinachopendelewa",
+    "needBy": "Kinahitajika Ifikapo",
+    "specialNotes": "Maelezo Maalum",
+    "noNotes": "Hakuna maelezo yaliyoongezwa.",
+    "notSet": "Haijawekwa",
+    "requester": "Mwombaji",
+    "viewProfile": "Ona Wasifu",
+    "requestedAgo": "Iliombwa {{time}}",
+    "cancelRequest": "Ghairi Ombi",
+    "editRequest": "Hariri Ombi",
+    "cancelConfirm": "Hii itaghairi ombi lako na kurudisha pointi zilizotumika. Endelea?",
+    "cancelled": "Ombi limeghairiwa na pointi zimerudishwa.",
+    "cancelFailed": "Imeshindwa kughairi ombi hili. Tafadhali jaribu tena.",
+    "saved": "Ombi limesasishwa.",
+    "saveFailed": "Imeshindwa kusasisha ombi lako. Tafadhali jaribu tena.",
+    "notesPlaceholder": "Kuna jambo mtoaji anapaswa kujua?"
+  },
+  "rate": {
+    "title": "Kadiria matumizi yako",
+    "prompt": "Ubadilishanaji ulikuwaje?",
+    "rateProvider": "Kadiria Mtoaji",
+    "yourRating": "Ukadiriaji Wako",
+    "commentLabel": "Ongeza maoni (hiari)",
+    "commentPlaceholder": "Waambie wengine ilivyokuwa…",
+    "submit": "Wasilisha Ukadiriaji",
+    "thanks": "Asante kwa maoni yako.",
+    "failed": "Imeshindwa kuwasilisha ukadiriaji. Tafadhali jaribu tena.",
+    "starLabel": "nyota {{count}}",
+    "starLabel_other": "nyota {{count}}",
+    "scale": {
+      "1": "Hafifu",
+      "2": "Wastani",
+      "3": "Nzuri",
+      "4": "Nzuri sana",
+      "5": "Bora kabisa"
+    }
+  },
+  "editProfile": {
+    "name": "Jina kamili",
+    "phone": "Namba ya simu",
+    "phonePlaceholder": "mf. 0700 123 456",
+    "district": "Wilaya",
+    "address": "Anwani",
+    "bio": "Kuhusu wewe",
+    "bioPlaceholder": "Ijulishe jamii kidogo kukuhusu",
+    "saved": "Wasifu umesasishwa.",
+    "saveFailed": "Imeshindwa kuhifadhi wasifu wako. Tafadhali jaribu tena.",
+    "nameRequired": "Tafadhali weka jina lako."
+  },
+  "login": {
+    "title": "Karibu tena",
+    "subtitle": "Ingia ili uendelee kushiriki chakula na jamii yako.",
+    "email": "Barua pepe",
+    "emailPlaceholder": "wewe@mfano.com",
+    "password": "Nenosiri",
+    "passwordPlaceholder": "Nenosiri lako",
+    "signIn": "Ingia",
+    "noAccount": "Huna akaunti?",
+    "createOne": "Fungua akaunti",
+    "invalidCredentials": "Taarifa hizo hazilingani na kumbukumbu zetu.",
+    "failed": "Imeshindwa kuingia. Angalia mtandao kisha ujaribu tena.",
+    "passwordRequired": "Tafadhali weka nenosiri lako.",
+    "haveAccount": "Tayari una akaunti?",
+    "signInLink": "Ingia"
   }
 }

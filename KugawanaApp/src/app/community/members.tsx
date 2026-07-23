@@ -1,43 +1,29 @@
 import { useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
-import { ArrowLeft, Search, Star } from 'lucide-react-native'
+import { ArrowLeft, ChevronRight, Search, Star } from 'lucide-react-native'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { memberService } from '../../services/member.service'
-import type { MemberListItem } from '../../types/member.types'
-
-const demoMembers: MemberListItem[] = [
-  { id: 1, name: 'Grace A.', rating: 4.8, reviews_count: 23, role_label: 'Food Provider', profile_photo: 'https://randomuser.me/api/portraits/women/68.jpg' },
-  { id: 2, name: 'Amina N.', rating: 4.9, reviews_count: 16, role_label: 'Active Member', profile_photo: 'https://randomuser.me/api/portraits/women/44.jpg' },
-  { id: 3, name: 'Samuel K.', rating: 4.7, reviews_count: 15, role_label: 'Community Helper', profile_photo: 'https://randomuser.me/api/portraits/men/32.jpg' },
-  { id: 4, name: 'Peter M.', rating: 4.6, reviews_count: 10, role_label: 'Active Member', profile_photo: 'https://randomuser.me/api/portraits/men/76.jpg' },
-  { id: 5, name: 'Lydia T.', rating: 4.9, reviews_count: 20, role_label: 'Food Provider', profile_photo: 'https://randomuser.me/api/portraits/women/65.jpg' },
-]
 
 export default function CommunityMembersScreen() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
 
-  const { data } = useQuery({
+  const { data: members } = useQuery({
     queryKey: ['members'],
     queryFn: () => memberService.list(),
-    retry: false,
   })
-
-  const members = data && data.length > 0 ? data : demoMembers
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return members
-    return members.filter((m) => m.name.toLowerCase().includes(q))
+    if (!q) return members ?? []
+    return (members ?? []).filter((m) => m.name.toLowerCase().includes(q))
   }, [members, search])
-
-  const message = (name: string) => Alert.alert(name, t('common.comingSoon'))
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -84,20 +70,18 @@ export default function CommunityMembersScreen() {
               )}
               <View style={styles.info}>
                 <Text style={styles.name}>{item.name}</Text>
-                <View style={styles.ratingRow}>
-                  <Star size={18} color={colors.accent} fill={colors.accent} strokeWidth={0} />
-                  <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
-                  <Text style={styles.reviews}>({item.reviews_count})</Text>
-                </View>
+                {item.reviews_count > 0 ? (
+                  <View style={styles.ratingRow}>
+                    <Star size={18} color={colors.accent} fill={colors.accent} strokeWidth={0} />
+                    <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
+                    <Text style={styles.reviews}>({item.reviews_count})</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.noRating}>{t('orders.noRatings')}</Text>
+                )}
                 <Text style={styles.role}>{item.role_label}</Text>
               </View>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.messageBtn, pressed && styles.messagePressed]}
-              onPress={() => message(item.name)}
-            >
-              <Text style={styles.messageLabel}>{t('members.message')}</Text>
+              <ChevronRight size={22} color={colors.textMuted} strokeWidth={2} />
             </Pressable>
           </View>
         )}
@@ -209,19 +193,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textSecondary,
   },
-  messageBtn: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.sm + 2,
-  },
-  messagePressed: {
-    backgroundColor: '#EDF5ED',
-  },
-  messageLabel: {
+  noRating: {
     fontSize: 15,
-    fontWeight: '700',
-    color: colors.primary,
+    color: colors.textMuted,
   },
 })

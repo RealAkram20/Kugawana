@@ -11,23 +11,13 @@ use App\Models\FoodDonation;
 use App\Models\Order;
 use App\Models\Rating;
 use App\Models\User;
+use App\Support\CategoryIcons;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Support\MediaUrl;
 
 class MemberController extends Controller
 {
-    private const CATEGORY_EMOJI = [
-        'Fresh' => '🥗',
-        'Frozen' => '🧊',
-        'Dry foods' => '🌾',
-        'Cooked foods' => '🍲',
-        'Beverages' => '🥤',
-        'Bakery' => '🍞',
-        'Baby food' => '🍼',
-        'Vegetables' => '🥦',
-        'Fruits' => '🍎',
-    ];
-
     public function index(Request $request): JsonResponse
     {
         $members = User::query()
@@ -49,7 +39,7 @@ class MemberController extends Controller
                     'rating' => $reviewsCount > 0 ? (float) round((clone $ratings)->avg('stars'), 1) : 0,
                     'reviews_count' => $reviewsCount,
                     'role_label' => $member->role === UserRole::Donor ? 'Food Provider' : 'Active Member',
-                    'profile_photo' => $member->profile_photo,
+                    'profile_photo' => MediaUrl::for($member->profile_photo),
                 ];
             });
 
@@ -74,7 +64,7 @@ class MemberController extends Controller
         $reviewsCount = (clone $ratings)->count();
         $rating = $reviewsCount > 0 ? round((clone $ratings)->avg('stars'), 1) : 0;
 
-        $activity = FoodDonation::with('category')
+        $activity = FoodDonation::with(['category', 'unit'])
             ->where('donor_id', $member->id)
             ->latest()
             ->limit(5)
@@ -83,7 +73,7 @@ class MemberController extends Controller
                 'id' => $donation->id,
                 'title' => $donation->title,
                 'detail' => $donation->quantity,
-                'emoji' => self::CATEGORY_EMOJI[$donation->category?->name] ?? '🍽️',
+                'category_icon' => CategoryIcons::for($donation->category?->name),
                 'time_ago' => $donation->created_at->diffForHumans(),
                 'status' => $donation->status === FoodStatus::Published
                     ? 'Active'
@@ -100,7 +90,7 @@ class MemberController extends Controller
                 'id' => $member->id,
                 'name' => $member->name,
                 'role_label' => $member->role === UserRole::Donor ? 'Food Provider' : 'Food Receiver',
-                'profile_photo' => $member->profile_photo,
+                'profile_photo' => MediaUrl::for($member->profile_photo),
                 'rating' => (float) $rating,
                 'reviews_count' => $reviewsCount,
                 'location' => $location,

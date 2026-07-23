@@ -24,3 +24,7 @@ yarn-error.log
 
 # Design mockups (large binaries)
 /images
+
+# Build artifacts
+*.apk
+*.aab

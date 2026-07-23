@@ -1,4 +1,4 @@
-import type { MemberListItem, MemberProfile } from '../types/member.types'
+import type { MemberListItem, MemberProfile, MemberReviews } from '../types/member.types'
 import { api } from './api'
 
 export const memberService = {
@@ -9,6 +9,11 @@ export const memberService = {
 
   async get(id: number | string): Promise<MemberProfile> {
     const { data } = await api.get(`/members/${id}`)
+    return data.data
+  },
+
+  async reviews(id: number | string): Promise<MemberReviews> {
+    const { data } = await api.get(`/members/${id}/reviews`)
     return data.data
   },
 }

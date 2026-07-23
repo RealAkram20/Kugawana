@@ -26,6 +26,7 @@ class ProfileController extends Controller
             'gender' => ['sometimes', 'nullable', 'string'],
             'district' => ['sometimes', 'nullable', 'string'],
             'address' => ['sometimes', 'nullable', 'string'],
+            'bio' => ['sometimes', 'nullable', 'string', 'max:500'],
             'latitude' => ['sometimes', 'nullable', 'numeric'],
             'longitude' => ['sometimes', 'nullable', 'numeric'],
         ]);

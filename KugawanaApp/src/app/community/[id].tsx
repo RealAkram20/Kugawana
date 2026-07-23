@@ -5,6 +5,7 @@ import { ArrowLeft, Heart, MapPin, MessageCircle, MoreHorizontal, Send } from 'l
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,56 +19,37 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { communityService } from '../../services/community.service'
-import type { CommunityComment, CommunityPostDetail } from '../../types/community.types'
-
-const demoPost: CommunityPostDetail = {
-  id: 1,
-  author_id: 1,
-  author_name: 'Grace A.',
-  profile_photo: 'https://randomuser.me/api/portraits/women/68.jpg',
-  content: 'I need some tomatoes and onions for a family meal. Anyone nearby?',
-  images: ['https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&q=80'],
-  post_type: 'request',
-  location: 'Kiwatule, Kampala',
-  time_ago: '1h ago',
-  likes_count: 12,
-  comments_count: 5,
-  liked: true,
-  comments: [
-    { id: 1, author_name: 'Amina N.', profile_photo: 'https://randomuser.me/api/portraits/women/44.jpg', content: 'I can help with some tomatoes. Contact me!', time_ago: '30m ago' },
-    { id: 2, author_name: 'Peter M.', profile_photo: 'https://randomuser.me/api/portraits/men/76.jpg', content: 'I have onions available.', time_ago: '20m ago' },
-  ],
-}
+import type { CommunityComment } from '../../types/community.types'
 
 export default function CommunityPostDetailScreen() {
   const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
 
-  const { data } = useQuery({
+  const { data: post } = useQuery({
     queryKey: ['community-post', id],
     queryFn: () => communityService.detail(id),
-    retry: false,
   })
 
-  const post = data ?? demoPost
-
-  const [liked, setLiked] = useState(post.liked)
-  const [likes, setLikes] = useState(post.likes_count)
-  const [comments, setComments] = useState<CommunityComment[]>(post.comments)
-  const [commentCount, setCommentCount] = useState(post.comments_count)
+  const [liked, setLiked] = useState(false)
+  const [likes, setLikes] = useState(0)
+  const [comments, setComments] = useState<CommunityComment[]>([])
+  const [commentCount, setCommentCount] = useState(0)
   const [draft, setDraft] = useState('')
 
   useEffect(() => {
+    if (!post) return
     setLiked(post.liked)
     setLikes(post.likes_count)
     setComments(post.comments)
     setCommentCount(post.comments_count)
-  }, [data])
+  }, [post])
+
+  const postId = Number(id)
 
   const toggleLike = () => {
     setLiked((prev) => !prev)
     setLikes((prev) => (liked ? prev - 1 : prev + 1))
-    communityService.like(post.id).catch(() => {})
+    communityService.like(postId).catch(() => {})
   }
 
   const send = () => {
@@ -83,7 +65,17 @@ export default function CommunityPostDetailScreen() {
     setComments((prev) => [...prev, optimistic])
     setCommentCount((prev) => prev + 1)
     setDraft('')
-    communityService.comment(post.id, text).catch(() => {})
+    communityService.comment(postId, text).catch(() => {})
+  }
+
+  if (!post) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    )
   }
 
   return (
@@ -209,6 +201,11 @@ export default function CommunityPostDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   safe: {
     flex: 1,
     backgroundColor: colors.surface,

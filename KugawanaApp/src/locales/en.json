@@ -74,7 +74,10 @@
     "learn": "Learn",
     "community": "Community",
     "seeAll": "See all",
-    "empty": "No food published yet. Check back soon."
+    "empty": "No food published yet. Check back soon.",
+    "noNearbyFood": "No food shared nearby yet.",
+    "noPosts": "No community posts yet.",
+    "noArticles": "No articles yet."
   },
   "food": {
     "browse": "Find food",
@@ -99,7 +102,25 @@
     "contact": "Contact number",
     "expiry": "Best before date",
     "submit": "Share food",
-    "submitted": "Thank you. Your donation is waiting for review."
+    "submitted": "Thank you. Your donation is waiting for review.",
+    "failed": "Could not share this. Please try again.",
+    "categoryRequired": "Please choose a category.",
+    "unit": "Unit",
+    "unitRequired": "Please choose a unit.",
+    "amountInvalid": "Please enter how much you are sharing.",
+    "amountPlaceholder": "e.g. 2",
+    "photos": "Photos",
+    "addPhoto": "Add photo",
+    "photosHint": "Add up to {{count}} photos. The first one is used as the listing picture.",
+    "photosPermission": "Kugawana needs access to your photos to add a picture.",
+    "descriptionPlaceholder": "Anything else people should know?",
+    "availableUntil": "Available until {{when}}",
+    "windows": {
+      "today": "Later today",
+      "tomorrow": "Tomorrow",
+      "threeDays": "In 3 days",
+      "week": "In a week"
+    }
   },
   "community": {
     "title": "Community",
@@ -129,7 +150,8 @@
     "packages": "Point packages",
     "buy": "Top up",
     "history": "History",
-    "requested": "Top up request sent. Points arrive after approval."
+    "requested": "Top up request sent. Points arrive after approval.",
+    "pointsBalance": "{{count}} points"
   },
   "profile": {
     "title": "Profile",
@@ -166,7 +188,29 @@
     "pending": "Pending",
     "accepted": "Accepted",
     "completed": "Completed",
-    "empty": "No requests yet"
+    "empty": "No requests yet",
+    "none": {
+      "all": "No requests yet.",
+      "pending": "No pending requests.",
+      "accepted": "No accepted requests.",
+      "completed": "No completed requests."
+    },
+    "noMore": {
+      "all": "No more requests",
+      "pending": "No more pending requests",
+      "accepted": "No more accepted requests",
+      "completed": "No more completed requests"
+    },
+    "cancelled": "Cancelled",
+    "provider": "Provider",
+    "scheduledPickup": "Scheduled Pickup",
+    "pickupNotSet": "To be arranged",
+    "markCompleted": "Mark as Completed",
+    "completeConfirm": "Confirm you have received this food. This closes the request.",
+    "completedToast": "Request completed. Thank you!",
+    "completeFailed": "Could not complete this request. Please try again.",
+    "noRatings": "No ratings yet",
+    "noContact": "This provider has not shared a contact number."
   },
   "postDetail": {
     "title": "Community Post Detail",
@@ -227,12 +271,124 @@
     "title": "Member Profile",
     "foodProvider": "Food Provider",
     "foodReceiver": "Food Receiver",
-    "reviews": "reviews",
+    "reviews": "{{count}} review",
     "posts": "Posts",
     "shared": "Shared",
     "helped": "Helped",
     "about": "About",
     "recentActivity": "Recent Activity",
-    "active": "Active"
+    "active": "Active",
+    "reviews_other": "{{count}} reviews"
+  },
+  "sharedFood": {
+    "title": "My Shared Food",
+    "sharedAgo": "Shared {{time}}",
+    "active": "Active",
+    "foodDetails": "Food Details",
+    "availableUntil": "Available Until",
+    "pickupLocation": "Pickup Location",
+    "peopleInterested": "People Interested",
+    "noInterest": "No one has requested this yet.",
+    "edit": "Edit",
+    "save": "Save changes",
+    "saved": "Changes saved.",
+    "saveFailed": "Could not save your changes. Please try again.",
+    "requiredFields": "Title, quantity and pickup location are required.",
+    "markCompleted": "Mark as Completed",
+    "completeConfirm": "This closes the listing so no one else can request it. Continue?",
+    "completed": "Marked as completed. Thank you for sharing!",
+    "completeFailed": "Could not mark this as completed. Please try again.",
+    "today": "Today, {{time}}",
+    "tomorrow": "Tomorrow, {{time}}",
+    "status": {
+      "pending": "Pending review",
+      "reviewed": "Reviewed",
+      "approved": "Approved",
+      "collected": "Collected",
+      "stored": "Stored",
+      "published": "Active",
+      "reserved": "Reserved",
+      "delivered": "Delivered",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    },
+    "tabs": {
+      "all": "All",
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "empty": {
+      "all": "You have not shared any food yet.",
+      "active": "Nothing active right now. Share food to get started.",
+      "completed": "No completed shares yet."
+    }
+  },
+  "requestDetail": {
+    "title": "Request Details",
+    "preferredQuantity": "Preferred Quantity",
+    "needBy": "Need By",
+    "specialNotes": "Special Notes",
+    "noNotes": "No notes added.",
+    "notSet": "Not set",
+    "requester": "Requester",
+    "viewProfile": "View Profile",
+    "requestedAgo": "Requested {{time}}",
+    "cancelRequest": "Cancel Request",
+    "editRequest": "Edit Request",
+    "cancelConfirm": "This cancels your request and refunds any points spent. Continue?",
+    "cancelled": "Request cancelled and points refunded.",
+    "cancelFailed": "Could not cancel this request. Please try again.",
+    "saved": "Request updated.",
+    "saveFailed": "Could not update your request. Please try again.",
+    "notesPlaceholder": "Anything the provider should know?"
+  },
+  "rate": {
+    "title": "Rate your experience",
+    "prompt": "How was this exchange?",
+    "rateProvider": "Rate Provider",
+    "yourRating": "Your Rating",
+    "commentLabel": "Add a comment (optional)",
+    "commentPlaceholder": "Tell others how it went…",
+    "submit": "Submit Rating",
+    "thanks": "Thank you for your feedback.",
+    "failed": "Could not submit your rating. Please try again.",
+    "starLabel": "{{count}} star",
+    "starLabel_other": "{{count}} stars",
+    "scale": {
+      "1": "Poor",
+      "2": "Fair",
+      "3": "Good",
+      "4": "Very good",
+      "5": "Excellent"
+    }
+  },
+  "editProfile": {
+    "name": "Full name",
+    "phone": "Phone number",
+    "phonePlaceholder": "e.g. 0700 123 456",
+    "district": "District",
+    "address": "Address",
+    "bio": "About you",
+    "bioPlaceholder": "Tell the community a little about yourself",
+    "saved": "Profile updated.",
+    "saveFailed": "Could not save your profile. Please try again.",
+    "nameRequired": "Please enter your name."
+  },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to continue sharing food with your community.",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "Your password",
+    "signIn": "Sign In",
+    "noAccount": "Don't have an account?",
+    "createOne": "Create one",
+    "invalidCredentials": "Those details did not match our records.",
+    "failed": "Could not sign in. Check your connection and try again.",
+    "passwordRequired": "Please enter your password.",
+    "haveAccount": "Already have an account?",
+    "signInLink": "Sign in"
   }
 }

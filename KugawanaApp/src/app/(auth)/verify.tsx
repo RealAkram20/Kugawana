@@ -83,11 +83,12 @@ export default function VerifyScreen() {
       country_id: null,
       district: location,
       address: null,
+      bio: null,
       profile_photo: null,
       wallet_balance: 0,
       responsibility_score: 0,
     })
-    router.replace('/(tabs)')
+    router.replace('/(auth)/profile-setup')
   }
 
   const digits = Array.from({ length: CODE_LENGTH }, (_, i) => code[i] ?? '')

@@ -27,7 +27,7 @@ class FoodDonationResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->when(
+        return parent::getEloquentQuery()->with('unit')->when(
             auth()->user()->role === UserRole::CountryAdmin,
             fn (Builder $query) => $query->where('country_id', auth()->user()->country_id)
         );
@@ -59,10 +59,29 @@ class FoodDonationResource extends Resource
                     ->numeric()
                     ->minValue(0)
                     ->required(),
-                Forms\Components\TextInput::make('quantity')->required(),
+                Forms\Components\TextInput::make('amount')
+                    ->label('Quantity')
+                    ->numeric()
+                    ->minValue(0.01)
+                    ->step(0.01)
+                    ->required(),
+                Forms\Components\Select::make('unit_id')
+                    ->relationship('unit', 'name', fn ($query) => $query->orderBy('sort_order'))
+                    ->label('Unit')
+                    ->required()
+                    ->preload(),
                 Forms\Components\DateTimePicker::make('expiry_date')->required(),
                 Forms\Components\TextInput::make('contact_number'),
                 Forms\Components\Textarea::make('description')->columnSpanFull(),
+                Forms\Components\FileUpload::make('images')
+                    ->label('Photos')
+                    ->image()
+                    ->multiple()
+                    ->reorderable()
+                    ->maxFiles(5)
+                    ->directory('food')
+                    ->helperText('The first photo is used as the listing thumbnail in the app.')
+                    ->columnSpanFull(),
                 Forms\Components\Textarea::make('admin_notes')->columnSpanFull(),
             ])->columns(2),
         ]);
@@ -72,9 +91,11 @@ class FoodDonationResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('images.0')->label('Photo')->square(),
                 Tables\Columns\TextColumn::make('title')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('donor.name')->label('Donor')->searchable(),
                 Tables\Columns\TextColumn::make('category.name')->label('Category'),
+                Tables\Columns\TextColumn::make('quantity')->label('Quantity'),
                 Tables\Columns\TextColumn::make('status')->badge(),
                 Tables\Columns\TextColumn::make('expiry_date')->dateTime()->sortable(),
                 Tables\Columns\TextColumn::make('points_required')->label('Points'),

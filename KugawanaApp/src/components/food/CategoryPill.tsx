@@ -18,22 +18,20 @@ export function CategoryPill({ label, active, onPress }: CategoryPillProps) {
 
 const styles = StyleSheet.create({
   pill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    height: 42,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    borderRadius: 21,
+    backgroundColor: '#F2F2EF',
     marginRight: spacing.sm,
   },
   active: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
   label: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
   labelActive: {
     color: colors.surface,

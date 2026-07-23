@@ -33,7 +33,7 @@ class DonationController extends Controller
         $search = $request->query('q');
 
         $donations = $this->scoped()
-            ->with(['donor', 'category'])
+            ->with(['donor', 'category', 'unit'])
             ->when($filter !== 'all', fn ($q) => $q->where('status', $filter))
             ->when($search, fn ($q) => $q->where(fn ($sub) => $sub
                 ->where('title', 'like', "%{$search}%")
@@ -57,7 +57,7 @@ class DonationController extends Controller
     {
         $this->guardScope($donation);
 
-        $donation->load(['donor', 'category', 'warehouse']);
+        $donation->load(['donor', 'category', 'warehouse', 'unit']);
 
         $stepNames = [FoodStatus::Pending, FoodStatus::Reviewed, FoodStatus::Approved, FoodStatus::Collected, FoodStatus::Stored, FoodStatus::Published];
         $current = array_search($donation->status, $stepNames, true);
@@ -143,7 +143,7 @@ class DonationController extends Controller
 
     public function export(): StreamedResponse
     {
-        $donations = $this->scoped()->with(['donor', 'category'])->latest()->get();
+        $donations = $this->scoped()->with(['donor', 'category', 'unit'])->latest()->get();
 
         return response()->streamDownload(function () use ($donations) {
             $out = fopen('php://output', 'w');

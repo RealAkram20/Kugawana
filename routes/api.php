@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\LearnController;
 use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,10 +27,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/food/mine', [FoodController::class, 'mine']);
     Route::get('/food/{food}', [FoodController::class, 'show']);
     Route::post('/food', [FoodController::class, 'store']);
+    Route::put('/food/{food}', [FoodController::class, 'update']);
+    Route::post('/food/{food}/complete', [FoodController::class, 'complete']);
+    Route::get('/food/{food}/interested', [FoodController::class, 'interested']);
     Route::get('/categories', [FoodController::class, 'categories']);
+    Route::get('/units', [FoodController::class, 'units']);
 
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::put('/orders/{order}', [OrderController::class, 'update']);
+    Route::post('/orders/{order}/complete', [OrderController::class, 'complete']);
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+    Route::post('/orders/{order}/rate', [RatingController::class, 'store']);
+    Route::get('/members/{member}/reviews', [RatingController::class, 'forMember']);
 
     Route::get('/wallet', [WalletController::class, 'index']);
     Route::get('/wallet/packages', [WalletController::class, 'packages']);

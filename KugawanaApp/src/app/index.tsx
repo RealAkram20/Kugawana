@@ -1,9 +1,17 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { communityService } from '../services/community.service'
+import { foodService } from '../services/food.service'
+import { learnService } from '../services/learn.service'
 import { useAuthStore } from '../stores/auth.store'
 
+/** How long the branded screen shows at minimum, even if everything is ready. */
 const splashDurationMs = Number(process.env.EXPO_PUBLIC_SPLASH_MS ?? 2500)
+
+/** A slow or dead network must never strand people on the splash. */
+const maxDataWaitMs = 6000
 
 const splashColors = {
   background: '#FDFDFB',
@@ -15,23 +23,56 @@ const splashColors = {
 
 export default function Splash() {
   const { width } = useWindowDimensions()
+  const queryClient = useQueryClient()
   const hydrated = useAuthStore((state) => state.hydrated)
   const token = useAuthStore((state) => state.token)
   const [ready, setReady] = useState(false)
+  const [dataWarm, setDataWarm] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setReady(true), splashDurationMs)
     return () => clearTimeout(timer)
   }, [])
 
+  // Fill the cache with what the home screen needs while the splash is still
+  // showing, so the tabs open populated instead of empty-then-popping-in.
   useEffect(() => {
-    if (!ready || !hydrated) return
+    if (!hydrated) return
+
+    if (!token) {
+      setDataWarm(true)
+      return
+    }
+
+    let cancelled = false
+
+    const warm = Promise.all([
+      queryClient.prefetchQuery({ queryKey: ['food'], queryFn: () => foodService.getListings() }),
+      queryClient.prefetchQuery({ queryKey: ['community'], queryFn: () => communityService.feed() }),
+      queryClient.prefetchQuery({ queryKey: ['learn'], queryFn: () => learnService.articles() }),
+    ])
+
+    const capped = new Promise<void>((resolve) => setTimeout(resolve, maxDataWaitMs))
+
+    // prefetchQuery swallows its own errors, so a failed request just means the
+    // home screen falls back to fetching normally rather than hanging here.
+    Promise.race([warm, capped]).then(() => {
+      if (!cancelled) setDataWarm(true)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [hydrated, token, queryClient])
+
+  useEffect(() => {
+    if (!ready || !hydrated || !dataWarm) return
     if (token) {
       router.replace('/(tabs)')
     } else {
       router.replace('/(auth)/language')
     }
-  }, [ready, hydrated, token])
+  }, [ready, hydrated, dataWarm, token])
 
   return (
     <View style={styles.container}>

@@ -74,7 +74,10 @@
     "learn": "Apprendre",
     "community": "Communauté",
     "seeAll": "Tout voir",
-    "empty": "Pas encore de nourriture publiée. Revenez bientôt."
+    "empty": "Pas encore de nourriture publiée. Revenez bientôt.",
+    "noNearbyFood": "Aucun aliment partagé à proximité.",
+    "noPosts": "Aucune publication pour le moment.",
+    "noArticles": "Aucun article pour le moment."
   },
   "food": {
     "browse": "Trouver de la nourriture",
@@ -99,7 +102,25 @@
     "contact": "Numéro de contact",
     "expiry": "Date limite",
     "submit": "Partager",
-    "submitted": "Merci. Votre don attend la vérification."
+    "submitted": "Merci. Votre don attend la vérification.",
+    "failed": "Impossible de partager. Veuillez réessayer.",
+    "categoryRequired": "Veuillez choisir une catégorie.",
+    "unit": "Unité",
+    "unitRequired": "Veuillez choisir une unité.",
+    "amountInvalid": "Veuillez indiquer la quantité que vous partagez.",
+    "amountPlaceholder": "ex. 2",
+    "photos": "Photos",
+    "addPhoto": "Ajouter",
+    "photosHint": "Ajoutez jusqu’à {{count}} photos. La première sert d’image de l’annonce.",
+    "photosPermission": "Kugawana a besoin d’accéder à vos photos pour ajouter une image.",
+    "descriptionPlaceholder": "Autre chose à signaler ?",
+    "availableUntil": "Disponible jusqu’à {{when}}",
+    "windows": {
+      "today": "Plus tard aujourd’hui",
+      "tomorrow": "Demain",
+      "threeDays": "Dans 3 jours",
+      "week": "Dans une semaine"
+    }
   },
   "community": {
     "title": "Communauté",
@@ -129,7 +150,8 @@
     "packages": "Forfaits de points",
     "buy": "Recharger",
     "history": "Historique",
-    "requested": "Demande envoyée. Les points arrivent après approbation."
+    "requested": "Demande envoyée. Les points arrivent après approbation.",
+    "pointsBalance": "{{count}} points"
   },
   "profile": {
     "title": "Profil",
@@ -166,7 +188,29 @@
     "pending": "En attente",
     "accepted": "Acceptées",
     "completed": "Terminées",
-    "empty": "Pas encore de demandes"
+    "empty": "Pas encore de demandes",
+    "none": {
+      "all": "Aucune demande pour le moment.",
+      "pending": "Aucune demande en attente.",
+      "accepted": "Aucune demande acceptée.",
+      "completed": "Aucune demande terminée."
+    },
+    "noMore": {
+      "all": "Plus aucune demande",
+      "pending": "Plus aucune demande en attente",
+      "accepted": "Plus aucune demande acceptée",
+      "completed": "Plus aucune demande terminée"
+    },
+    "cancelled": "Annulée",
+    "provider": "Fournisseur",
+    "scheduledPickup": "Retrait prévu",
+    "pickupNotSet": "À convenir",
+    "markCompleted": "Marquer comme terminé",
+    "completeConfirm": "Confirmez que vous avez reçu cette nourriture. Cela clôture la demande.",
+    "completedToast": "Demande terminée. Merci !",
+    "completeFailed": "Impossible de terminer cette demande. Veuillez réessayer.",
+    "noRatings": "Pas encore de note",
+    "noContact": "Ce fournisseur n'a pas partagé de numéro."
   },
   "postDetail": {
     "title": "Détail de la publication",
@@ -227,12 +271,124 @@
     "title": "Profil du membre",
     "foodProvider": "Fournisseur de nourriture",
     "foodReceiver": "Bénéficiaire",
-    "reviews": "avis",
+    "reviews": "{{count}} avis",
     "posts": "Publications",
     "shared": "Partagés",
     "helped": "Aidés",
     "about": "À propos",
     "recentActivity": "Activité récente",
-    "active": "Actif"
+    "active": "Actif",
+    "reviews_other": "{{count}} avis"
+  },
+  "sharedFood": {
+    "title": "Mes partages",
+    "sharedAgo": "Partagé {{time}}",
+    "active": "Actif",
+    "foodDetails": "Détails de l'aliment",
+    "availableUntil": "Disponible jusqu'à",
+    "pickupLocation": "Lieu de retrait",
+    "peopleInterested": "Personnes intéressées",
+    "noInterest": "Personne n'a encore fait de demande.",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "Modifications enregistrées.",
+    "saveFailed": "Impossible d'enregistrer. Veuillez réessayer.",
+    "requiredFields": "Le titre, la quantité et le lieu de retrait sont obligatoires.",
+    "markCompleted": "Marquer comme terminé",
+    "completeConfirm": "Cela ferme l'annonce, plus personne ne pourra la demander. Continuer ?",
+    "completed": "Marqué comme terminé. Merci d'avoir partagé !",
+    "completeFailed": "Impossible de marquer comme terminé. Veuillez réessayer.",
+    "today": "Aujourd'hui, {{time}}",
+    "tomorrow": "Demain, {{time}}",
+    "status": {
+      "pending": "En attente",
+      "reviewed": "Examiné",
+      "approved": "Approuvé",
+      "collected": "Collecté",
+      "stored": "Stocké",
+      "published": "Actif",
+      "reserved": "Réservé",
+      "delivered": "Livré",
+      "completed": "Terminé",
+      "rejected": "Rejeté",
+      "expired": "Expiré"
+    },
+    "tabs": {
+      "all": "Tout",
+      "active": "Actif",
+      "completed": "Terminé"
+    },
+    "empty": {
+      "all": "Vous n'avez encore rien partagé.",
+      "active": "Rien d’actif pour le moment. Partagez de la nourriture pour commencer.",
+      "completed": "Aucun partage terminé pour le moment."
+    }
+  },
+  "requestDetail": {
+    "title": "Détails de la demande",
+    "preferredQuantity": "Quantité souhaitée",
+    "needBy": "Nécessaire avant",
+    "specialNotes": "Notes particulières",
+    "noNotes": "Aucune note ajoutée.",
+    "notSet": "Non défini",
+    "requester": "Demandeur",
+    "viewProfile": "Voir le profil",
+    "requestedAgo": "Demandé {{time}}",
+    "cancelRequest": "Annuler la demande",
+    "editRequest": "Modifier la demande",
+    "cancelConfirm": "Cela annule votre demande et rembourse les points dépensés. Continuer ?",
+    "cancelled": "Demande annulée et points remboursés.",
+    "cancelFailed": "Impossible d'annuler cette demande. Veuillez réessayer.",
+    "saved": "Demande mise à jour.",
+    "saveFailed": "Impossible de mettre à jour. Veuillez réessayer.",
+    "notesPlaceholder": "Quelque chose à signaler au fournisseur ?"
+  },
+  "rate": {
+    "title": "Notez votre expérience",
+    "prompt": "Comment s’est passé cet échange ?",
+    "rateProvider": "Noter le fournisseur",
+    "yourRating": "Votre note",
+    "commentLabel": "Ajouter un commentaire (facultatif)",
+    "commentPlaceholder": "Dites aux autres comment cela s’est passé…",
+    "submit": "Envoyer la note",
+    "thanks": "Merci pour votre retour.",
+    "failed": "Impossible d’envoyer votre note. Veuillez réessayer.",
+    "starLabel": "{{count}} étoile",
+    "starLabel_other": "{{count}} étoiles",
+    "scale": {
+      "1": "Mauvais",
+      "2": "Passable",
+      "3": "Bien",
+      "4": "Très bien",
+      "5": "Excellent"
+    }
+  },
+  "editProfile": {
+    "name": "Nom complet",
+    "phone": "Numéro de téléphone",
+    "phonePlaceholder": "ex. 0700 123 456",
+    "district": "District",
+    "address": "Adresse",
+    "bio": "À propos de vous",
+    "bioPlaceholder": "Présentez-vous brièvement à la communauté",
+    "saved": "Profil mis à jour.",
+    "saveFailed": "Impossible d’enregistrer votre profil. Veuillez réessayer.",
+    "nameRequired": "Veuillez saisir votre nom."
+  },
+  "login": {
+    "title": "Bon retour",
+    "subtitle": "Connectez-vous pour continuer à partager de la nourriture.",
+    "email": "E-mail",
+    "emailPlaceholder": "vous@exemple.com",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "Votre mot de passe",
+    "signIn": "Se connecter",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "createOne": "Créer un compte",
+    "invalidCredentials": "Ces informations ne correspondent pas à nos données.",
+    "failed": "Connexion impossible. Vérifiez votre connexion et réessayez.",
+    "passwordRequired": "Veuillez saisir votre mot de passe.",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "signInLink": "Se connecter"
   }
 }

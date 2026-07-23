@@ -70,7 +70,7 @@ class DashboardController extends Controller
             ->values();
 
         $pending = (clone $donations)
-            ->with(['donor', 'category'])
+            ->with(['donor', 'category', 'unit'])
             ->whereIn('status', [FoodStatus::Pending, FoodStatus::Reviewed])
             ->latest()
             ->limit(6)

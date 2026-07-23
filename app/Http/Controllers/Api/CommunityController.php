@@ -11,8 +11,8 @@ use App\Models\CommunityLike;
 use App\Models\CommunityPost;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Enum;
+use App\Support\MediaUrl;
 
 class CommunityController extends Controller
 {
@@ -62,9 +62,9 @@ class CommunityController extends Controller
                 'id' => $post->id,
                 'author_id' => $post->user_id,
                 'author_name' => $post->user?->name,
-                'profile_photo' => $post->user?->profile_photo,
+                'profile_photo' => MediaUrl::for($post->user?->profile_photo),
                 'content' => $post->content,
-                'images' => collect($post->images ?? [])->map(fn ($path) => Storage::url($path))->all(),
+                'images' => MediaUrl::all($post->images),
                 'post_type' => $post->post_type?->value,
                 'location' => $post->location ?? $post->user?->district,
                 'time_ago' => $post->created_at->diffForHumans(short: true),
@@ -74,7 +74,7 @@ class CommunityController extends Controller
                 'comments' => $post->comments->map(fn (CommunityComment $comment) => [
                     'id' => $comment->id,
                     'author_name' => $comment->user?->name,
-                    'profile_photo' => $comment->user?->profile_photo,
+                    'profile_photo' => MediaUrl::for($comment->user?->profile_photo),
                     'content' => $comment->content,
                     'time_ago' => $comment->created_at->diffForHumans(),
                 ]),
@@ -103,7 +103,7 @@ class CommunityController extends Controller
             'data' => [
                 'id' => $comment->id,
                 'author_name' => $comment->user?->name,
-                'profile_photo' => $comment->user?->profile_photo,
+                'profile_photo' => MediaUrl::for($comment->user?->profile_photo),
                 'content' => $comment->content,
                 'time_ago' => $comment->created_at->diffForHumans(),
             ],

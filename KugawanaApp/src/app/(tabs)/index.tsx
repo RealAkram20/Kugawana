@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import {
   Bell,
@@ -24,27 +25,13 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { CategoryIcon } from '../../components/ui/CategoryIcon'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
+import { communityService } from '../../services/community.service'
 import { foodService } from '../../services/food.service'
+import { learnService } from '../../services/learn.service'
 import { useAuthStore } from '../../stores/auth.store'
-
-const SAMPLE_FOOD = [
-  { id: 'bananas', title: 'Bananas', emoji: '🍌', tint: '#FDF3D8', distance: '200m', when: 'Today, 4:00 PM' },
-  { id: 'rice', title: 'Cooked Rice', emoji: '🍚', tint: '#F3EFE7', distance: '350m', when: 'Today, 3:30 PM' },
-  { id: 'vegetables', title: 'Vegetables', emoji: '🥦', tint: '#E8F3E4', distance: '500m', when: 'Tomorrow' },
-]
-
-const SAMPLE_POST = {
-  author: 'Grace A.',
-  when: '1h ago',
-  group: 'Food Sharing',
-  text: 'I have extra tomatoes and onions. Anyone nearby interested?',
-  emoji: '🍅',
-  tint: '#F9E3DC',
-  likes: 12,
-  comments: 5,
-}
 
 const QUICK_ACTIONS = [
   { key: 'find', icon: Salad, color: '#2D6A2D', route: '/food' as const },
@@ -61,6 +48,19 @@ export default function HomeScreen() {
     queryFn: () => foodService.getListings(),
   })
 
+  const { data: posts } = useQuery({
+    queryKey: ['community'],
+    queryFn: () => communityService.feed(),
+  })
+
+  const { data: articles } = useQuery({
+    queryKey: ['learn'],
+    queryFn: () => learnService.articles(),
+  })
+
+  const latestPost = posts?.[0]
+  const latestArticle = articles?.[0]
+
   const firstName = user?.name?.split(' ')[0] ?? ''
   const actionLabels: Record<string, string> = {
     find: t('home.findFood'),
@@ -69,17 +69,7 @@ export default function HomeScreen() {
     community: t('home.community'),
   }
 
-  const nearby =
-    listings && listings.length > 0
-      ? listings.slice(0, 3).map((item) => ({
-          id: String(item.id),
-          title: item.title,
-          emoji: '🥗',
-          tint: '#E8F3E4',
-          distance: item.pickup_address ?? '',
-          when: item.expiry_date,
-        }))
-      : SAMPLE_FOOD
+  const nearby = (listings ?? []).slice(0, 3)
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -101,7 +91,7 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.greeting}>
-          {t('home.greeting')}, {firstName} 👋
+          {t('home.greeting')}, {firstName}
         </Text>
         <View style={styles.locationRow}>
           <MapPin size={18} color={colors.textPrimary} strokeWidth={2.2} />
@@ -134,29 +124,40 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
           </Pressable>
         </View>
-        <View style={styles.foodRow}>
-          {nearby.map((item) => (
-            <Pressable key={item.id} style={styles.foodCard} onPress={() => router.push('/food')}>
-              <View style={[styles.foodImage, { backgroundColor: item.tint }]}>
-                <Text style={styles.foodEmoji}>{item.emoji}</Text>
-                <View style={styles.distanceBadge}>
-                  <Text style={styles.distanceBadgeText}>{item.distance}</Text>
+        {nearby.length > 0 ? (
+          <View style={styles.foodRow}>
+            {nearby.map((item) => (
+              <Pressable
+                key={item.id}
+                style={styles.foodCard}
+                onPress={() => router.push({ pathname: '/food/[id]', params: { id: item.id } })}
+              >
+                <View style={styles.foodImage}>
+                  {item.images?.[0] ? (
+                    <Image source={item.images[0]} style={styles.foodPhoto} contentFit="cover" transition={150} />
+                  ) : (
+                    <CategoryIcon slug={item.category_icon} size={28} />
+                  )}
                 </View>
-              </View>
-              <Text style={styles.foodTitle} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.foodMeta}>{`${item.distance} ${t('home.away')}`}</Text>
-              <Text style={styles.foodMeta} numberOfLines={1}>
-                {item.when}
-              </Text>
-              <View style={styles.freshRow}>
-                <View style={styles.freshDot} />
-                <Text style={styles.freshText}>{t('home.fresh')}</Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
+                <Text style={styles.foodTitle} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={styles.foodMeta} numberOfLines={1}>
+                  {item.pickup_address ?? ''}
+                </Text>
+                <Text style={styles.foodMeta} numberOfLines={1}>
+                  {item.quantity}
+                </Text>
+                <View style={styles.freshRow}>
+                  <View style={styles.freshDot} />
+                  <Text style={styles.freshText}>{t('home.fresh')}</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.sectionEmpty}>{t('home.noNearbyFood')}</Text>
+        )}
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>{t('home.recentPosts')}</Text>
@@ -164,36 +165,53 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
           </Pressable>
         </View>
-        <Pressable style={styles.postCard} onPress={() => router.push('/(tabs)/community')}>
-          <View style={styles.postHeader}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{SAMPLE_POST.author[0]}</Text>
+        {latestPost ? (
+          <Pressable
+            style={styles.postCard}
+            onPress={() => router.push({ pathname: '/community/[id]', params: { id: latestPost.id } })}
+          >
+            <View style={styles.postHeader}>
+              {latestPost.profile_photo ? (
+                <Image source={latestPost.profile_photo} style={styles.avatar} contentFit="cover" />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {latestPost.author_name?.slice(0, 1).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.postHeaderText}>
+                <Text style={styles.postAuthor}>{latestPost.author_name}</Text>
+                <Text style={styles.postMeta}>{latestPost.time_ago}</Text>
+              </View>
+              <Ellipsis size={20} color={colors.textSecondary} />
             </View>
-            <View style={styles.postHeaderText}>
-              <Text style={styles.postAuthor}>{SAMPLE_POST.author}</Text>
-              <Text style={styles.postMeta}>
-                {SAMPLE_POST.when} {t('home.in')} <Text style={styles.postGroup}>{SAMPLE_POST.group}</Text>
+            <View style={styles.postBody}>
+              <Text style={styles.postText} numberOfLines={3}>
+                {latestPost.content}
               </Text>
+              {latestPost.images?.[0] ? (
+                <Image source={latestPost.images[0]} style={styles.postThumb} contentFit="cover" transition={150} />
+              ) : null}
             </View>
-            <Ellipsis size={20} color={colors.textSecondary} />
-          </View>
-          <View style={styles.postBody}>
-            <Text style={styles.postText}>{SAMPLE_POST.text}</Text>
-            <View style={[styles.postThumb, { backgroundColor: SAMPLE_POST.tint }]}>
-              <Text style={styles.postThumbEmoji}>{SAMPLE_POST.emoji}</Text>
+            <View style={styles.postStats}>
+              <View style={styles.postStat}>
+                <Heart
+                  size={20}
+                  color={latestPost.liked ? colors.error : colors.textSecondary}
+                  fill={latestPost.liked ? colors.error : 'transparent'}
+                />
+                <Text style={styles.postStatText}>{latestPost.likes_count}</Text>
+              </View>
+              <View style={styles.postStat}>
+                <MessageCircle size={20} color={colors.textSecondary} />
+                <Text style={styles.postStatText}>{latestPost.comments_count}</Text>
+              </View>
             </View>
-          </View>
-          <View style={styles.postStats}>
-            <View style={styles.postStat}>
-              <Heart size={20} color="#E0245E" fill="#E0245E" />
-              <Text style={styles.postStatText}>{SAMPLE_POST.likes}</Text>
-            </View>
-            <View style={styles.postStat}>
-              <MessageCircle size={20} color={colors.textSecondary} />
-              <Text style={styles.postStatText}>{SAMPLE_POST.comments}</Text>
-            </View>
-          </View>
-        </Pressable>
+          </Pressable>
+        ) : (
+          <Text style={styles.sectionEmpty}>{t('home.noPosts')}</Text>
+        )}
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>{t('home.learningResources')}</Text>
@@ -201,15 +219,26 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
           </Pressable>
         </View>
-        <Pressable style={styles.learnCard} onPress={() => router.push('/learn')}>
-          <View style={styles.learnIcon}>
-            <BookOpen size={24} color={colors.primary} strokeWidth={2.2} />
-          </View>
-          <View style={styles.learnText}>
-            <Text style={styles.learnTitle}>{t('home.learnSampleTitle')}</Text>
-            <Text style={styles.learnSubtitle}>{t('home.learnSampleSubtitle')}</Text>
-          </View>
-        </Pressable>
+        {latestArticle ? (
+          <Pressable
+            style={styles.learnCard}
+            onPress={() => router.push({ pathname: '/learn/[id]', params: { id: latestArticle.id } })}
+          >
+            <View style={styles.learnIcon}>
+              <BookOpen size={24} color={colors.primary} strokeWidth={2.2} />
+            </View>
+            <View style={styles.learnText}>
+              <Text style={styles.learnTitle} numberOfLines={1}>
+                {latestArticle.title}
+              </Text>
+              <Text style={styles.learnSubtitle} numberOfLines={1}>
+                {latestArticle.category}
+              </Text>
+            </View>
+          </Pressable>
+        ) : (
+          <Text style={styles.sectionEmpty}>{t('home.noArticles')}</Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -335,6 +364,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: spacing.sm,
   },
+  foodPhoto: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  sectionEmpty: {
+    color: colors.textMuted,
+    fontSize: 15,
+    paddingVertical: spacing.md,
+  },
   foodImage: {
     aspectRatio: 1,
     borderRadius: 12,
@@ -342,9 +381,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     marginBottom: spacing.sm,
-  },
-  foodEmoji: {
-    fontSize: 44,
   },
   distanceBadge: {
     position: 'absolute',
@@ -449,9 +485,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  postThumbEmoji: {
-    fontSize: 32,
   },
   postStats: {
     flexDirection: 'row',

@@ -2,7 +2,7 @@ export interface MemberActivity {
   id: number
   title: string
   detail: string
-  emoji: string
+  category_icon: string
   time_ago: string
   status: string
 }
@@ -27,4 +27,19 @@ export interface MemberProfile {
   stats: { posts: number; shared: number; helped: number }
   about: string | null
   recent_activity: MemberActivity[]
+}
+
+export interface MemberReview {
+  id: number
+  stars: number
+  comment: string | null
+  time_ago: string
+  author_name: string | null
+  author_photo: string | null
+}
+
+export interface MemberReviews {
+  rating: number
+  reviews_count: number
+  reviews: MemberReview[]
 }

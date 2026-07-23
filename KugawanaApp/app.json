@@ -28,9 +28,15 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 160
+          "backgroundColor": "#FDFDFB",
+          "image": "./assets/images/splash-blank.png",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Kugawana to access your photos so you can add pictures of the food you are sharing."
         }
       ]
     ],

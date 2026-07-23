@@ -48,6 +48,14 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('district'),
                 Forms\Components\TextInput::make('responsibility_score')->numeric(),
                 Forms\Components\Toggle::make('is_active')->label('Active'),
+                Forms\Components\FileUpload::make('profile_photo')
+                    ->label('Profile photo')
+                    ->image()
+                    ->avatar()
+                    ->directory('avatars'),
+                Forms\Components\Textarea::make('bio')
+                    ->maxLength(500)
+                    ->columnSpanFull(),
             ])->columns(2),
         ]);
     }
@@ -56,6 +64,7 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('profile_photo')->label('Photo')->circular(),
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('email')->searchable(),
                 Tables\Columns\TextColumn::make('phone')->searchable(),

@@ -45,7 +45,7 @@ export function Button({ label, onPress, variant = 'primary', loading = false, d
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
+    minHeight: 58,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   labelPrimary: {
     color: colors.surface,

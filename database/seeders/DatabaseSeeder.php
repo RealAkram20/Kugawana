@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Country;
 use App\Models\FoodCategory;
 use App\Models\PointPackage;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -56,6 +57,28 @@ class DatabaseSeeder extends Seeder
             FoodCategory::firstOrCreate(['name' => $category]);
         }
 
+        // Admins can add more from the Food > Units screen; these are the
+        // defaults every install starts with.
+        $units = [
+            ['name' => 'Gram', 'symbol' => 'g'],
+            ['name' => 'Kilogram', 'symbol' => 'Kg'],
+            ['name' => 'Millilitre', 'symbol' => 'ml'],
+            ['name' => 'Litre', 'symbol' => 'L'],
+            ['name' => 'Piece', 'symbol' => 'pcs'],
+            ['name' => 'Bunch', 'symbol' => 'bunches'],
+            ['name' => 'Loaf', 'symbol' => 'loaves'],
+            ['name' => 'Packet', 'symbol' => 'pkt'],
+            ['name' => 'Tray', 'symbol' => 'trays'],
+            ['name' => 'Plate', 'symbol' => 'plates'],
+        ];
+
+        foreach ($units as $index => $unit) {
+            Unit::firstOrCreate(
+                ['symbol' => $unit['symbol']],
+                ['name' => $unit['name'], 'is_active' => true, 'sort_order' => $index + 1]
+            );
+        }
+
         $packages = [
             ['name' => 'Starter', 'points' => 100, 'price' => 1000],
             ['name' => 'Basic', 'points' => 250, 'price' => 2300],
@@ -74,5 +97,8 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+
+        // Demo listings, articles, posts and photos for the mobile app.
+        $this->call(DemoContentSeeder::class);
     }
 }

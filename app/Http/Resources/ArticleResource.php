@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Support\MediaUrl;
 
 class ArticleResource extends JsonResource
 {
@@ -15,7 +15,7 @@ class ArticleResource extends JsonResource
             'title' => $this->title,
             'category' => $this->category,
             'content' => $this->content,
-            'cover_image' => $this->cover_image ? Storage::url($this->cover_image) : null,
+            'cover_image' => MediaUrl::for($this->cover_image),
             'created_at' => $this->created_at->toIso8601String(),
         ];
     }

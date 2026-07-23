@@ -1,85 +1,243 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { router } from 'expo-router'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CategoryPill } from '../../components/food/CategoryPill'
-import { Button } from '../../components/ui/Button'
+import { PhotoPicker } from '../../components/food/PhotoPicker'
 import { Input } from '../../components/ui/Input'
 import { colors } from '../../constants/colors'
+import { availableUntilParts } from '../../constants/datetime'
 import { spacing } from '../../constants/spacing'
 import { foodService } from '../../services/food.service'
+import type { PickedImage } from '../../types/food.types'
 
 interface ShareForm {
   title: string
   description: string
-  quantity: string
+  amount: string
   pickup_address: string
   contact_number: string
-  expiry_date: string
 }
 
+/** Preset windows, so nobody has to hand-type a timestamp. */
+const WINDOWS = [
+  { key: 'today', hours: 8 },
+  { key: 'tomorrow', hours: 24 },
+  { key: 'threeDays', hours: 72 },
+  { key: 'week', hours: 168 },
+] as const
+
 export default function ShareScreen() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
+
   const { control, handleSubmit, reset } = useForm<ShareForm>({
-    defaultValues: { title: '', description: '', quantity: '', pickup_address: '', contact_number: '', expiry_date: '' },
+    defaultValues: {
+      title: '',
+      description: '',
+      amount: '',
+      pickup_address: '',
+      contact_number: '',
+    },
   })
+
   const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [unitId, setUnitId] = useState<number | null>(null)
+  const [images, setImages] = useState<PickedImage[]>([])
+  const [windowKey, setWindowKey] = useState<(typeof WINDOWS)[number]['key']>('tomorrow')
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: () => foodService.getCategories(),
   })
 
+  const { data: units } = useQuery({
+    queryKey: ['units'],
+    queryFn: () => foodService.getUnits(),
+  })
+
+  const expiryDate = () => {
+    const hours = WINDOWS.find((w) => w.key === windowKey)?.hours ?? 24
+    return new Date(Date.now() + hours * 60 * 60 * 1000)
+  }
+
+  const expiryLabel = () => {
+    const parts = availableUntilParts(expiryDate().toISOString(), i18n.language)
+    return parts.dayKey
+      ? t(`sharedFood.${parts.dayKey}`, { time: parts.time })
+      : `${parts.day}, ${parts.time}`
+  }
+
   const donate = useMutation({
     mutationFn: (values: ShareForm) =>
-      foodService.donate({ ...values, food_category_id: categoryId ?? 0 }),
-    onSuccess: () => {
+      foodService.donate({
+        ...values,
+        amount: Number(values.amount.replace(',', '.')),
+        unit_id: unitId ?? 0,
+        food_category_id: categoryId ?? 0,
+        expiry_date: expiryDate().toISOString(),
+        images,
+      }),
+    onSuccess: (created) => {
       reset()
       setCategoryId(null)
+      setUnitId(null)
+      setImages([])
+      setWindowKey('tomorrow')
       queryClient.invalidateQueries({ queryKey: ['my-donations'] })
+      queryClient.invalidateQueries({ queryKey: ['food'] })
       Alert.alert(t('common.appName'), t('share.submitted'))
+      // Land on the new listing rather than leaving the form sitting there.
+      router.push({ pathname: '/food/shared/[id]', params: { id: created.id } })
     },
-    onError: (error: any) => {
-      Alert.alert(t('common.appName'), error.response?.data?.message ?? 'Could not submit. Try again.')
-    },
+    onError: (error: any) =>
+      Alert.alert(t('common.appName'), error.response?.data?.message ?? t('share.failed')),
+  })
+
+  const submit = handleSubmit((values) => {
+    if (categoryId == null) {
+      Alert.alert(t('common.appName'), t('share.categoryRequired'))
+      return
+    }
+    if (unitId == null) {
+      Alert.alert(t('common.appName'), t('share.unitRequired'))
+      return
+    }
+    if (!(Number(values.amount.replace(',', '.')) > 0)) {
+      Alert.alert(t('common.appName'), t('share.amountInvalid'))
+      return
+    }
+    donate.mutate(values)
   })
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{t('share.title')}</Text>
+      <Text style={styles.headerTitle}>{t('share.title')}</Text>
 
-        <Input control={control} name="title" label={t('share.foodTitle')} rules={{ required: true }} />
-        <Input control={control} name="description" label={t('share.description')} multiline numberOfLines={3} />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Input control={control} name="title" label={t('share.foodTitle')} rules={{ required: true }} />
 
-        <Text style={styles.label}>{t('share.category')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pills}>
-          {(categories ?? []).map((category) => (
-            <CategoryPill
-              key={category.id}
-              label={category.name}
-              active={categoryId === category.id}
-              onPress={() => setCategoryId(category.id)}
-            />
-          ))}
+          <Text style={styles.label}>{t('share.category')}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pills}
+          >
+            {(categories ?? []).map((category) => (
+              <CategoryPill
+                key={category.id}
+                label={category.name}
+                active={categoryId === category.id}
+                onPress={() => setCategoryId(category.id)}
+              />
+            ))}
+          </ScrollView>
+
+          <Text style={styles.label}>{t('share.photos')}</Text>
+          <PhotoPicker value={images} onChange={setImages} max={5} />
+
+          <Input
+            control={control}
+            name="amount"
+            label={t('share.quantity')}
+            rules={{ required: true }}
+            keyboardType="decimal-pad"
+            placeholder={t('share.amountPlaceholder')}
+          />
+
+          <Text style={styles.label}>{t('share.unit')}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pills}
+          >
+            {(units ?? []).map((unit) => (
+              <CategoryPill
+                key={unit.id}
+                label={unit.symbol}
+                active={unitId === unit.id}
+                onPress={() => setUnitId(unit.id)}
+              />
+            ))}
+          </ScrollView>
+
+          <Text style={styles.label}>{t('share.expiry')}</Text>
+          <View style={styles.windowRow}>
+            {WINDOWS.map((option) => {
+              const active = windowKey === option.key
+              return (
+                <Pressable
+                  key={option.key}
+                  onPress={() => setWindowKey(option.key)}
+                  style={[styles.window, active && styles.windowActive]}
+                >
+                  <Text style={[styles.windowLabel, active && styles.windowLabelActive]}>
+                    {t(`share.windows.${option.key}`)}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          <Text style={styles.expiryHint}>{t('share.availableUntil', { when: expiryLabel() })}</Text>
+
+          <Input
+            control={control}
+            name="pickup_address"
+            label={t('share.pickupAddress')}
+            rules={{ required: true }}
+          />
+          <Input
+            control={control}
+            name="contact_number"
+            label={t('share.contact')}
+            keyboardType="phone-pad"
+            placeholder={t('editProfile.phonePlaceholder')}
+          />
+          <Input
+            control={control}
+            name="description"
+            label={t('share.description')}
+            multiline
+            placeholder={t('share.descriptionPlaceholder')}
+          />
         </ScrollView>
 
-        <Input control={control} name="quantity" label={t('share.quantity')} rules={{ required: true }} />
-        <Input control={control} name="pickup_address" label={t('share.pickupAddress')} rules={{ required: true }} />
-        <Input control={control} name="contact_number" label={t('share.contact')} keyboardType="phone-pad" />
-        <Input control={control} name="expiry_date" label={t('share.expiry')} placeholder="2026-07-30 18:00" rules={{ required: true }} />
-
-        <Button
-          label={t('share.submit')}
-          onPress={handleSubmit((values) => donate.mutate(values))}
-          loading={donate.isPending}
-          disabled={categoryId == null}
-        />
-        <View style={styles.bottomPad} />
-      </ScrollView>
+        <View style={styles.footer}>
+          <Pressable
+            disabled={donate.isPending}
+            onPress={submit}
+            style={({ pressed }) => [
+              styles.submit,
+              pressed && styles.pressed,
+              donate.isPending && styles.disabled,
+            ]}
+          >
+            {donate.isPending ? (
+              <ActivityIndicator color={colors.surface} />
+            ) : (
+              <Text style={styles.submitLabel}>{t('share.submit')}</Text>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -87,27 +245,84 @@ export default function ShareScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
-  container: {
-    padding: spacing.md,
+  flex: {
+    flex: 1,
   },
-  title: {
-    fontSize: 24,
+  headerTitle: {
+    fontSize: 26,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.lg,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+  content: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   pills: {
-    marginBottom: spacing.md,
+    paddingRight: spacing.md,
   },
-  bottomPad: {
-    height: spacing.xl,
+  windowRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  window: {
+    height: 42,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: 21,
+    backgroundColor: '#F2F2EF',
+  },
+  windowActive: {
+    backgroundColor: colors.primary,
+  },
+  windowLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  windowLabelActive: {
+    color: colors.surface,
+  },
+  expiryHint: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+  },
+  footer: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  submit: {
+    height: 58,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitLabel: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.surface,
+  },
+  pressed: {
+    opacity: 0.9,
+  },
+  disabled: {
+    opacity: 0.6,
   },
 })

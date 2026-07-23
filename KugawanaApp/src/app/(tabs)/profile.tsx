@@ -11,6 +11,8 @@ import {
   MapPin,
   Settings,
   ShoppingBag,
+  Users,
+  Wallet,
 } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -29,6 +31,8 @@ const iconColors = {
   language: colors.textPrimary,
   shared: colors.primary,
   requests: colors.accent,
+  wallet: '#0F8A6B',
+  members: '#2F6FED',
   settings: '#2F6FED',
   help: '#7C3AED',
   logout: colors.error,
@@ -182,6 +186,35 @@ export default function ProfileScreen() {
             <View style={styles.rowText}>
               <Text style={styles.rowLabel}>{t('profile.myRequests')}</Text>
               <Text style={styles.rowSub}>{t('profile.requestsCount', { count: orders?.length ?? 0 })}</Text>
+            </View>
+            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => router.push('/profile/wallet')}
+          >
+            <Wallet size={24} color={iconColors.wallet} strokeWidth={2} />
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>{t('profile.wallet')}</Text>
+              <Text style={[styles.rowSub, styles.rowSubAccent]}>
+                {t('wallet.pointsBalance', { count: user?.wallet_balance ?? 0 })}
+              </Text>
+            </View>
+            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => router.push('/community/members')}
+          >
+            <Users size={24} color={iconColors.members} strokeWidth={2} />
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>{t('members.title')}</Text>
             </View>
             <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
           </Pressable>

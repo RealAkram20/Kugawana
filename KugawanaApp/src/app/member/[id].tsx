@@ -3,39 +3,36 @@ import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, MapPin, Star } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { CategoryIcon } from '../../components/ui/CategoryIcon'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { memberService } from '../../services/member.service'
-import type { MemberProfile } from '../../types/member.types'
-
-const demoMember: MemberProfile = {
-  id: 1,
-  name: 'Grace A.',
-  role_label: 'Food Provider',
-  profile_photo: 'https://randomuser.me/api/portraits/women/68.jpg',
-  rating: 4.8,
-  reviews_count: 23,
-  location: 'Kampala, Uganda',
-  stats: { posts: 23, shared: 18, helped: 45 },
-  about: 'I love sharing food and helping my community.',
-  recent_activity: [
-    { id: 1, title: 'Shared Bananas', detail: '3 bunches', emoji: '🍌', time_ago: '2h ago', status: 'Active' },
-  ],
-}
 
 export default function MemberProfileScreen() {
   const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
 
-  const { data } = useQuery({
+  const { data: member, isLoading } = useQuery({
     queryKey: ['member', id],
     queryFn: () => memberService.get(id),
-    retry: false,
   })
 
-  const member = data ?? demoMember
+  const { data: reviews } = useQuery({
+    queryKey: ['member-reviews', id],
+    queryFn: () => memberService.reviews(id),
+  })
+
+  if (isLoading || !member) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -116,7 +113,7 @@ export default function MemberProfileScreen() {
           <Text style={styles.sectionTitle}>{t('member.recentActivity')}</Text>
           {member.recent_activity.map((activity) => (
             <View key={activity.id} style={styles.activityCard}>
-              <Text style={styles.activityEmoji}>{activity.emoji}</Text>
+              <CategoryIcon slug={activity.category_icon} />
               <View style={styles.activityText}>
                 <Text style={styles.activityTitle}>{activity.title}</Text>
                 <Text style={styles.activityDetail}>{activity.detail}</Text>
@@ -128,6 +125,37 @@ export default function MemberProfileScreen() {
             </View>
           ))}
         </View>
+
+        {reviews && reviews.reviews_count > 0 ? (
+          <>
+            <View style={styles.sectionDivider} />
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {t('member.reviews', { count: reviews.reviews_count })}
+              </Text>
+              {reviews.reviews.map((review) => (
+                <View key={review.id} style={styles.reviewCard}>
+                  <View style={styles.reviewHead}>
+                    <Text style={styles.reviewAuthor}>{review.author_name}</Text>
+                    <Text style={styles.reviewTime}>{review.time_ago}</Text>
+                  </View>
+                  <View style={styles.reviewStars}>
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <Star
+                        key={value}
+                        size={16}
+                        color={value <= review.stars ? colors.accent : colors.border}
+                        fill={value <= review.stars ? colors.accent : 'transparent'}
+                        strokeWidth={2}
+                      />
+                    ))}
+                  </View>
+                  {review.comment ? <Text style={styles.reviewComment}>{review.comment}</Text> : null}
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   )
@@ -139,6 +167,42 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    gap: 6,
+  },
+  reviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reviewAuthor: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  reviewTime: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  reviewStars: {
+    flexDirection: 'row',
+    gap: 3,
+  },
+  reviewComment: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.textPrimary,
   },
   header: {
     flexDirection: 'row',

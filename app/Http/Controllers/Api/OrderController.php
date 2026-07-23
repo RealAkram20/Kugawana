@@ -19,7 +19,14 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $orders = Order::query()
-            ->with(['foodDonation.category'])
+            ->with([
+                'rating',
+                'foodDonation.category',
+                'foodDonation.donor.country',
+                'foodDonation.donor' => fn ($query) => $query
+                    ->withAvg('ratingsReceived', 'stars')
+                    ->withCount('ratingsReceived'),
+            ])
             ->where('receiver_id', $request->user()->id)
             ->latest()
             ->get();
@@ -28,6 +35,125 @@ class OrderController extends Controller
             'success' => true,
             'data' => OrderResource::collection($orders),
             'message' => 'Orders retrieved',
+        ]);
+    }
+
+    public function show(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizeReceiver($request, $order);
+
+        return response()->json([
+            'success' => true,
+            'data' => new OrderResource($this->withDetail($order)),
+            'message' => 'Request retrieved',
+        ]);
+    }
+
+    public function update(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizeReceiver($request, $order);
+
+        if ($order->status !== OrderStatus::Pending) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Only a pending request can be edited.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'preferred_quantity' => ['nullable', 'string', 'max:100'],
+            'need_by' => ['nullable', 'date', 'after:now'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'delivery_address' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $order->update($data);
+
+        return response()->json([
+            'success' => true,
+            'data' => new OrderResource($this->withDetail($order)),
+            'message' => 'Request updated',
+        ]);
+    }
+
+    public function cancel(Request $request, Order $order, WalletService $wallet): JsonResponse
+    {
+        $this->authorizeReceiver($request, $order);
+
+        if (! in_array($order->status, [OrderStatus::Pending, OrderStatus::Accepted], true)) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'This request can no longer be cancelled.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($order, $wallet) {
+            $order->update(['status' => OrderStatus::Cancelled]);
+
+            if ($order->points_spent > 0) {
+                $wallet->credit($order->receiver, $order->points_spent, 'order refund', (string) $order->id);
+            }
+
+            // store() reserves the listing; releasing it here keeps the food
+            // available to other receivers instead of stranding it.
+            $food = $order->foodDonation;
+
+            if ($food && $food->status === FoodStatus::Reserved) {
+                $food->update(['status' => FoodStatus::Published]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => new OrderResource($this->withDetail($order->fresh())),
+            'message' => 'Request cancelled',
+        ]);
+    }
+
+    public function complete(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizeReceiver($request, $order);
+
+        if (in_array($order->status, [OrderStatus::Completed, OrderStatus::Cancelled], true)) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'This request can no longer be completed.',
+            ], 422);
+        }
+
+        // Mirrors the console flow so the responsibility score and completed_at
+        // stay consistent however an order is closed.
+        $order->update([
+            'status' => OrderStatus::Completed,
+            'completed_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => new OrderResource($this->withDetail($order)),
+            'message' => 'Request marked as completed',
+        ]);
+    }
+
+    private function authorizeReceiver(Request $request, Order $order): void
+    {
+        abort_unless($order->receiver_id === $request->user()->id, 403, 'This request is not yours.');
+    }
+
+    /** Everything the request detail screen renders, in one trip. */
+    private function withDetail(Order $order): Order
+    {
+        return $order->load([
+            'rating',
+            'receiver',
+            'foodDonation.category',
+            'foodDonation.donor.country',
+            'foodDonation.donor' => fn ($query) => $query
+                ->withAvg('ratingsReceived', 'stars')
+                ->withCount('ratingsReceived'),
         ]);
     }
 

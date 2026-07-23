@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
-import { Stack } from 'expo-router'
-import { Bell, ChevronRight, Info, Lock, SlidersHorizontal, UserCog } from 'lucide-react-native'
+import { router, Stack } from 'expo-router'
+import { Bell, ChevronRight, Info, Lock, SlidersHorizontal, UserCog, Users } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors } from '../../constants/colors'
@@ -10,19 +10,32 @@ export default function SettingsScreen() {
   const { t } = useTranslation()
   const comingSoon = () => Alert.alert(t('common.appName'), t('common.comingSoon'))
 
-  const groups: { title: string; rows: { label: string; Icon: typeof Bell; color: string }[] }[] = [
+  type Row = { label: string; Icon: typeof Bell; color: string; onPress: () => void }
+
+  const groups: { title: string; rows: Row[] }[] = [
     {
       title: t('profile.account'),
       rows: [
-        { label: t('profile.editProfile'), Icon: UserCog, color: colors.primary },
-        { label: t('profile.privacy'), Icon: Lock, color: '#2F6FED' },
+        {
+          label: t('profile.editProfile'),
+          Icon: UserCog,
+          color: colors.primary,
+          onPress: () => router.push('/profile/edit'),
+        },
+        { label: t('profile.privacy'), Icon: Lock, color: '#2F6FED', onPress: comingSoon },
       ],
     },
     {
       title: t('profile.preferences'),
       rows: [
-        { label: t('profile.notifications'), Icon: Bell, color: colors.accent },
-        { label: t('profile.language'), Icon: SlidersHorizontal, color: '#7C3AED' },
+        { label: t('profile.notifications'), Icon: Bell, color: colors.accent, onPress: comingSoon },
+        {
+          label: t('communitySettings.title'),
+          Icon: Users,
+          color: '#0F8A6B',
+          onPress: () => router.push('/community/settings'),
+        },
+        { label: t('profile.language'), Icon: SlidersHorizontal, color: '#7C3AED', onPress: comingSoon },
       ],
     },
   ]
@@ -38,7 +51,7 @@ export default function SettingsScreen() {
               {group.rows.map((row, index) => (
                 <Pressable
                   key={row.label}
-                  onPress={comingSoon}
+                  onPress={row.onPress}
                   style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
                 >
                   <row.Icon size={22} color={row.color} strokeWidth={2} />

@@ -86,6 +86,8 @@ export default function RegisterScreen() {
     Alert.alert(t('common.appName'), t('auth.googleComingSoon'))
   }
 
+  const signIn = () => router.push('/(auth)/login')
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -151,6 +153,12 @@ export default function RegisterScreen() {
             <Text style={styles.googleLabel}>{t('auth.continueWithGoogle')}</Text>
           </Pressable>
 
+          <Pressable style={styles.signInRow} onPress={signIn}>
+            <Text style={styles.signInText}>
+              {t('login.haveAccount')} <Text style={styles.signInLink}>{t('login.signInLink')}</Text>
+            </Text>
+          </Pressable>
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>{t('auth.agreePrefix')}</Text>
             <Pressable>
@@ -164,6 +172,18 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
+  signInRow: {
+    marginTop: spacing.lg,
+    alignItems: 'center',
+  },
+  signInText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  signInLink: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
   safe: {
     flex: 1,
     backgroundColor: colors.background,

@@ -9,6 +9,7 @@ export interface User {
   country_id: number | null
   district: string | null
   address: string | null
+  bio: string | null
   profile_photo: string | null
   wallet_balance: number
   responsibility_score: number

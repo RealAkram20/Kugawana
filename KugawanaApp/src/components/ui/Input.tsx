@@ -20,11 +20,16 @@ export function Input<T extends FieldValues>({ control, name, label, rules, ...i
         <View style={styles.wrap}>
           <Text style={styles.label}>{label}</Text>
           <TextInput
-            style={[styles.input, error != null && styles.inputError]}
+            style={[
+              styles.input,
+              inputProps.multiline === true && styles.multiline,
+              error != null && styles.inputError,
+            ]}
             value={value == null ? '' : String(value)}
             onChangeText={onChange}
             onBlur={onBlur}
             placeholderTextColor={colors.textMuted}
+            textAlignVertical={inputProps.multiline === true ? 'top' : 'auto'}
             {...inputProps}
           />
           {error?.message ? <Text style={styles.error}>{error.message}</Text> : null}
@@ -36,23 +41,26 @@ export function Input<T extends FieldValues>({ control, name, label, rules, ...i
 
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: spacing.md,
+    marginTop: spacing.lg,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   input: {
-    minHeight: 48,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     backgroundColor: colors.surface,
     fontSize: 16,
     color: colors.textPrimary,
+  },
+  multiline: {
+    minHeight: 110,
   },
   inputError: {
     borderColor: colors.error,

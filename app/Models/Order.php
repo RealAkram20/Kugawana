@@ -17,12 +17,17 @@ class Order extends Model
         'points_spent',
         'delivery_method',
         'delivery_address',
+        'preferred_quantity',
+        'scheduled_pickup_at',
+        'need_by',
         'notes',
         'completed_at',
     ];
 
     protected $casts = [
         'status' => OrderStatus::class,
+        'scheduled_pickup_at' => 'datetime',
+        'need_by' => 'datetime',
         'completed_at' => 'datetime',
     ];
 
