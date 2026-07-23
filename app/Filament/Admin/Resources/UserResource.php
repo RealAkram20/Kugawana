@@ -5,8 +5,10 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\UserRole;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Services\WalletService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -80,6 +82,33 @@ class UserResource extends Resource
                 ]),
             ])
             ->actions([
+                Tables\Actions\Action::make('grantPoints')
+                    ->label('Grant points')
+                    ->icon('heroicon-o-gift')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\TextInput::make('points')
+                            ->numeric()
+                            ->minValue(1)
+                            ->required(),
+                        Forms\Components\TextInput::make('reason')
+                            ->default('admin grant')
+                            ->maxLength(255)
+                            ->required(),
+                    ])
+                    ->action(function (User $record, array $data) {
+                        app(WalletService::class)->credit(
+                            $record,
+                            (int) $data['points'],
+                            $data['reason'],
+                            'grant:' . auth()->id() . ':' . now()->timestamp
+                        );
+
+                        Notification::make()
+                            ->title($data['points'] . ' points granted to ' . $record->name)
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
             ])
             ->defaultSort('created_at', 'desc');

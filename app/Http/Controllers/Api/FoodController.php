@@ -8,6 +8,7 @@ use App\Http\Resources\FoodResource;
 use App\Models\FoodCategory;
 use App\Models\FoodDonation;
 use App\Models\Unit;
+use App\Services\RewardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -115,6 +116,8 @@ class FoodController extends Controller
 
         $food->update(['status' => FoodStatus::Completed]);
         $food->load(['category', 'donor', 'unit', 'orders.receiver']);
+
+        app(RewardService::class)->award($request->user(), 'donation', 'donation:' . $food->id);
 
         return response()->json([
             'success' => true,

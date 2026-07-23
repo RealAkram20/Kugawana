@@ -16,6 +16,8 @@ class WalletTopup extends Model
         'currency',
         'payment_method',
         'payment_reference',
+        'merchant_reference',
+        'order_tracking_id',
         'status',
         'approved_by',
         'approved_at',

@@ -9,8 +9,11 @@ use App\Http\Resources\PostResource;
 use App\Models\CommunityComment;
 use App\Models\CommunityLike;
 use App\Models\CommunityPost;
+use App\Models\User;
+use App\Notifications\KugawanaNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Enum;
 use App\Support\MediaUrl;
 
@@ -98,6 +101,14 @@ class CommunityController extends Controller
         $post->increment('comments_count');
         $comment->load('user');
 
+        $this->notifyAuthor(
+            $post,
+            $request->user(),
+            'community.comment',
+            'New comment on your post',
+            "{$request->user()->name}: ".Str::limit($comment->content, 80)
+        );
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -151,6 +162,16 @@ class CommunityController extends Controller
                 'user_id' => $request->user()->id,
             ]);
             $post->increment('likes_count');
+
+            // Only on the like itself — un-liking is not news, and repeat
+            // like/unlike cycles must not spam the author.
+            $this->notifyAuthor(
+                $post,
+                $request->user(),
+                'community.like',
+                'Someone liked your post',
+                "{$request->user()->name} liked your post."
+            );
         }
 
         return response()->json([
@@ -158,5 +179,15 @@ class CommunityController extends Controller
             'data' => ['likes_count' => $post->fresh()->likes_count],
             'message' => 'Updated',
         ]);
+    }
+
+    /** Notifies a post's author, unless they are the one who acted. */
+    private function notifyAuthor(CommunityPost $post, User $actor, string $type, string $title, string $body): void
+    {
+        $author = $post->user;
+
+        if ($author && $author->id !== $actor->id) {
+            $author->notify(new KugawanaNotification($type, $title, $body, 'community', $post->id));
+        }
     }
 }

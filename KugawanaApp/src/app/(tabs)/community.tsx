@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
-import { Heart, MapPin, MessageCircle, Plus, Search } from 'lucide-react-native'
+import { Heart, MapPin, MessageCircle, Plus, Search, Settings } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -101,7 +101,19 @@ export default function CommunityScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text style={styles.title}>{t('community.title')}</Text>
+      <View style={styles.header}>
+        <View style={styles.headerSide} />
+        <Text style={styles.title}>{t('community.title')}</Text>
+        <Pressable
+          style={styles.headerSide}
+          hitSlop={8}
+          onPress={() => router.push('/community/settings')}
+          accessibilityRole="button"
+          accessibilityLabel={t('communitySettings.title')}
+        >
+          <Settings size={24} color={colors.textPrimary} strokeWidth={2} />
+        </Pressable>
+      </View>
 
       <View style={styles.searchField}>
         <Search size={22} color={colors.textSecondary} strokeWidth={2} />
@@ -158,12 +170,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  headerSide: {
+    width: 32,
+    alignItems: 'flex-end',
+  },
   title: {
     fontSize: 26,
     fontWeight: '700',
     color: colors.textPrimary,
     textAlign: 'center',
-    paddingVertical: spacing.md,
   },
   searchField: {
     flexDirection: 'row',

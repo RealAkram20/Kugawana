@@ -1,5 +1,5 @@
 import { Image } from 'expo-image'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View, ViewStyle } from 'react-native'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import type { FoodListing } from '../../types/food.types'
@@ -9,14 +9,16 @@ import { Card } from '../ui/Card'
 interface FoodCardProps {
   food: FoodListing
   onPress: () => void
+  /** The grid sets an explicit width so a lone card on the last row keeps its size. */
+  style?: ViewStyle
 }
 
-export function FoodCard({ food, onPress }: FoodCardProps) {
+export function FoodCard({ food, onPress, style }: FoodCardProps) {
   return (
-    <Card onPress={onPress} style={styles.card}>
+    <Card onPress={onPress} style={[styles.card, style]}>
       <View style={styles.imageWrap}>
         {food.images.length > 0 ? (
-          <Image source={{ uri: food.images[0] }} style={styles.image} contentFit="cover" />
+          <Image source={{ uri: food.images[0] }} style={styles.image} contentFit="cover" transition={150} />
         ) : (
           <View style={styles.placeholder}>
             <Text style={styles.placeholderText}>{food.title.slice(0, 1)}</Text>
@@ -24,14 +26,16 @@ export function FoodCard({ food, onPress }: FoodCardProps) {
         )}
       </View>
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{food.title}</Text>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+          {food.title}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1} maxFontSizeMultiplier={1.3}>
           {food.category?.name ?? ''} · {food.quantity}
         </Text>
-        <View style={styles.footer}>
-          <Badge label={`${food.points_required} pts`} tone="accent" />
-          <Text style={styles.address} numberOfLines={1}>{food.pickup_address ?? ''}</Text>
-        </View>
+        <Badge label={`${food.points_required} pts`} tone="accent" />
+        <Text style={styles.address} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+          {food.pickup_address ?? ''}
+        </Text>
       </View>
     </Card>
   )
@@ -41,10 +45,10 @@ const styles = StyleSheet.create({
   card: {
     padding: 0,
     overflow: 'hidden',
-    marginBottom: spacing.md,
   },
   imageWrap: {
-    height: 140,
+    // Square keeps every card in a row the same height whatever the photo is.
+    aspectRatio: 1,
     backgroundColor: colors.background,
   },
   image: {
@@ -63,10 +67,10 @@ const styles = StyleSheet.create({
     color: colors.surface,
   },
   body: {
-    padding: spacing.md,
+    padding: spacing.sm + 2,
   },
   title: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textPrimary,
   },
@@ -76,14 +80,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: spacing.sm,
   },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   address: {
-    flex: 1,
     fontSize: 12,
     color: colors.textMuted,
+    marginTop: spacing.sm - 2,
   },
 })

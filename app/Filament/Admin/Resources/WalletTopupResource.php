@@ -13,7 +13,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 class WalletTopupResource extends Resource
 {
@@ -99,21 +98,7 @@ class WalletTopupResource extends Resource
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->action(function (WalletTopup $record) {
-                        DB::transaction(function () use ($record) {
-                            $record->update([
-                                'status' => TopupStatus::Approved,
-                                'approved_by' => auth()->id(),
-                                'approved_at' => now(),
-                            ]);
-                            app(WalletService::class)->credit(
-                                $record->user,
-                                $record->points,
-                                'topup',
-                                (string) $record->id
-                            );
-                        });
-                    })
+                    ->action(fn (WalletTopup $record) => app(WalletService::class)->applyTopup($record, auth()->id()))
                     ->visible(fn (WalletTopup $record) => $record->status === TopupStatus::Pending),
                 Tables\Actions\Action::make('reject')
                     ->icon('heroicon-o-x-circle')

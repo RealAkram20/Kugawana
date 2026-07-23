@@ -1,0 +1,22 @@
+# Files EAS Build should NOT upload. Without this, the whole android/ folder
+# (build caches, ~950 MB) gets sent every build. EAS regenerates native
+# projects from app.json + config plugins, so none of this is needed remotely.
+
+# Generated native projects — EAS runs prebuild itself
+/android
+/ios
+
+# Local caches and build output
+.expo/
+dist/
+web-build/
+.gradle/
+*.tsbuildinfo
+
+# Tooling / editor
+.vscode/
+.idea/
+
+# Local env (EAS reads env from eas.json, not these)
+.env
+.env*.local

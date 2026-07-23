@@ -14,8 +14,10 @@ import {
   Search,
   Users,
 } from 'lucide-react-native'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  Keyboard,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,30 +25,61 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { NotificationsSheet } from '../../components/NotificationsSheet'
 import { CategoryIcon } from '../../components/ui/CategoryIcon'
+import { PagedSlider } from '../../components/ui/PagedSlider'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { communityService } from '../../services/community.service'
 import { foodService } from '../../services/food.service'
 import { learnService } from '../../services/learn.service'
+import { notificationsService } from '../../services/notifications.service'
 import { useAuthStore } from '../../stores/auth.store'
+
+/** How many cards each home carousel carries before "See all" takes over. */
+const MAX_CARDS = 10
 
 const QUICK_ACTIONS = [
   { key: 'find', icon: Salad, color: '#2D6A2D', route: '/food' as const },
-  { key: 'share', icon: CirclePlus, color: '#F5A623', route: '/(tabs)/share' as const },
+  { key: 'share', icon: CirclePlus, color: '#F5A623', route: '/food/create' as const },
   { key: 'learn', icon: BookOpen, color: '#4285F4', route: '/learn' as const },
   { key: 'community', icon: Users, color: '#7B4FD8', route: '/(tabs)/community' as const },
 ]
 
 export default function HomeScreen() {
   const { t } = useTranslation()
+  const { width } = useWindowDimensions()
   const user = useAuthStore((state) => state.user)
+  const [bellOpen, setBellOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  usePushNotifications()
   const { data: listings, isRefetching, refetch } = useQuery({
     queryKey: ['food'],
     queryFn: () => foodService.getListings(),
   })
+
+  // Suggestions load on a pause in typing, keyed apart from the home carousel.
+  const debouncedSearch = useDebouncedValue(search.trim(), 250)
+  const { data: searchResults } = useQuery({
+    queryKey: ['food-search', debouncedSearch],
+    queryFn: () => foodService.getListings({ search: debouncedSearch }),
+    enabled: debouncedSearch.length > 0,
+  })
+
+  const suggestions = (searchResults ?? []).slice(0, 3)
+  const suggestionsVisible = showSuggestions && debouncedSearch.length > 0 && suggestions.length > 0
+
+  const openListing = (id: number | string) => {
+    setShowSuggestions(false)
+    Keyboard.dismiss()
+    router.push({ pathname: '/food/[id]', params: { id: String(id) } })
+  }
 
   const { data: posts } = useQuery({
     queryKey: ['community'],
@@ -58,8 +91,13 @@ export default function HomeScreen() {
     queryFn: () => learnService.articles(),
   })
 
-  const latestPost = posts?.[0]
-  const latestArticle = articles?.[0]
+  // Drives the bell badge; the sheet reuses the same cache when it opens.
+  const { data: notifications } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationsService.list(),
+  })
+
+  const unreadCount = notifications?.unread_count ?? 0
 
   const firstName = user?.name?.split(' ')[0] ?? ''
   const actionLabels: Record<string, string> = {
@@ -69,7 +107,13 @@ export default function HomeScreen() {
     community: t('home.community'),
   }
 
-  const nearby = (listings ?? []).slice(0, 3)
+  // One slide is exactly as wide as the padded content, so paging lands cleanly
+  // whatever the device width.
+  const slideWidth = width - spacing.md * 2
+
+  const availableFood = (listings ?? []).slice(0, MAX_CARDS)
+  const recentPosts = (posts ?? []).slice(0, MAX_CARDS)
+  const recentArticles = (articles ?? []).slice(0, MAX_CARDS)
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -82,11 +126,19 @@ export default function HomeScreen() {
           <Pressable hitSlop={8}>
             <Menu size={26} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
-          <Pressable hitSlop={8} style={styles.bellWrap}>
+          <Pressable
+            hitSlop={8}
+            style={styles.bellWrap}
+            onPress={() => setBellOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('notifications.title')}
+          >
             <Bell size={24} color={colors.textPrimary} strokeWidth={2.2} />
-            <View style={styles.bellBadge}>
-              <Text style={styles.bellBadgeText}>3</Text>
-            </View>
+            {unreadCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            ) : null}
           </Pressable>
         </View>
 
@@ -101,11 +153,47 @@ export default function HomeScreen() {
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchInput}
+            value={search}
+            onChangeText={(text) => {
+              setSearch(text)
+              setShowSuggestions(true)
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            returnKeyType="search"
+            onSubmitEditing={() => setShowSuggestions(false)}
             placeholder={t('home.searchPlaceholder')}
             placeholderTextColor={colors.textSecondary}
           />
           <Search size={22} color={colors.textPrimary} strokeWidth={2.2} />
         </View>
+
+        {suggestionsVisible ? (
+          <View style={styles.suggestions}>
+            {suggestions.map((item, index) => (
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [
+                  styles.suggestionRow,
+                  index > 0 && styles.suggestionDivider,
+                  pressed && styles.suggestionPressed,
+                ]}
+                onPress={() => openListing(item.id)}
+              >
+                <View style={styles.suggestionThumb}>
+                  {item.images?.[0] ? (
+                    <Image source={item.images[0]} style={styles.suggestionPhoto} contentFit="cover" />
+                  ) : (
+                    <CategoryIcon slug={item.category_icon} size={22} />
+                  )}
+                </View>
+                <View style={styles.suggestionText}>
+                  <Text style={styles.suggestionTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.suggestionMeta} numberOfLines={1}>{item.quantity}</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
 
         <View style={styles.actionsRow}>
           {QUICK_ACTIONS.map((action) => (
@@ -119,44 +207,49 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>{t('home.nearbyFood')}</Text>
+          <Text style={styles.sectionTitle}>{t('home.availableFood')}</Text>
           <Pressable onPress={() => router.push('/food')}>
             <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
           </Pressable>
         </View>
-        {nearby.length > 0 ? (
-          <View style={styles.foodRow}>
-            {nearby.map((item) => (
-              <Pressable
-                key={item.id}
-                style={styles.foodCard}
-                onPress={() => router.push({ pathname: '/food/[id]', params: { id: item.id } })}
-              >
-                <View style={styles.foodImage}>
-                  {item.images?.[0] ? (
-                    <Image source={item.images[0]} style={styles.foodPhoto} contentFit="cover" transition={150} />
-                  ) : (
-                    <CategoryIcon slug={item.category_icon} size={28} />
-                  )}
-                </View>
-                <Text style={styles.foodTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.foodMeta} numberOfLines={1}>
-                  {item.pickup_address ?? ''}
-                </Text>
-                <Text style={styles.foodMeta} numberOfLines={1}>
-                  {item.quantity}
-                </Text>
-                <View style={styles.freshRow}>
-                  <View style={styles.freshDot} />
-                  <Text style={styles.freshText}>{t('home.fresh')}</Text>
-                </View>
-              </Pressable>
-            ))}
+        {availableFood.length > 0 ? (
+          <View style={styles.slider}>
+            <PagedSlider
+              data={availableFood}
+              slideWidth={slideWidth}
+              perSlide={2}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={(item) => (
+                <Pressable
+                  style={styles.foodCard}
+                  onPress={() => router.push({ pathname: '/food/[id]', params: { id: item.id } })}
+                >
+                  <View style={styles.foodImage}>
+                    {item.images?.[0] ? (
+                      <Image source={item.images[0]} style={styles.foodPhoto} contentFit="cover" transition={150} />
+                    ) : (
+                      <CategoryIcon slug={item.category_icon} size={40} />
+                    )}
+                  </View>
+                  <Text style={styles.foodTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.foodMeta} numberOfLines={1}>
+                    {item.pickup_address ?? ''}
+                  </Text>
+                  <Text style={styles.foodMeta} numberOfLines={1}>
+                    {item.quantity}
+                  </Text>
+                  <View style={styles.freshRow}>
+                    <View style={styles.freshDot} />
+                    <Text style={styles.freshText}>{t('home.fresh')}</Text>
+                  </View>
+                </Pressable>
+              )}
+            />
           </View>
         ) : (
-          <Text style={styles.sectionEmpty}>{t('home.noNearbyFood')}</Text>
+          <Text style={styles.sectionEmpty}>{t('home.noAvailableFood')}</Text>
         )}
 
         <View style={styles.sectionRow}>
@@ -165,50 +258,59 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
           </Pressable>
         </View>
-        {latestPost ? (
-          <Pressable
-            style={styles.postCard}
-            onPress={() => router.push({ pathname: '/community/[id]', params: { id: latestPost.id } })}
-          >
-            <View style={styles.postHeader}>
-              {latestPost.profile_photo ? (
-                <Image source={latestPost.profile_photo} style={styles.avatar} contentFit="cover" />
-              ) : (
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {latestPost.author_name?.slice(0, 1).toUpperCase()}
-                  </Text>
-                </View>
+        {recentPosts.length > 0 ? (
+          <View style={styles.slider}>
+            <PagedSlider
+              data={recentPosts}
+              slideWidth={slideWidth}
+              keyExtractor={(post) => String(post.id)}
+              renderItem={(post) => (
+                <Pressable
+                  style={styles.postCard}
+                  onPress={() => router.push({ pathname: '/community/[id]', params: { id: post.id } })}
+                >
+                  <View style={styles.postHeader}>
+                    {post.profile_photo ? (
+                      <Image source={post.profile_photo} style={styles.avatar} contentFit="cover" />
+                    ) : (
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{post.author_name?.slice(0, 1).toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <View style={styles.postHeaderText}>
+                      <Text style={styles.postAuthor} numberOfLines={1}>
+                        {post.author_name}
+                      </Text>
+                      <Text style={styles.postMeta}>{post.time_ago}</Text>
+                    </View>
+                    <Ellipsis size={20} color={colors.textSecondary} />
+                  </View>
+                  <View style={styles.postBody}>
+                    <Text style={styles.postText} numberOfLines={3}>
+                      {post.content}
+                    </Text>
+                    {post.images?.[0] ? (
+                      <Image source={post.images[0]} style={styles.postThumb} contentFit="cover" transition={150} />
+                    ) : null}
+                  </View>
+                  <View style={styles.postStats}>
+                    <View style={styles.postStat}>
+                      <Heart
+                        size={20}
+                        color={post.liked ? colors.error : colors.textSecondary}
+                        fill={post.liked ? colors.error : 'transparent'}
+                      />
+                      <Text style={styles.postStatText}>{post.likes_count}</Text>
+                    </View>
+                    <View style={styles.postStat}>
+                      <MessageCircle size={20} color={colors.textSecondary} />
+                      <Text style={styles.postStatText}>{post.comments_count}</Text>
+                    </View>
+                  </View>
+                </Pressable>
               )}
-              <View style={styles.postHeaderText}>
-                <Text style={styles.postAuthor}>{latestPost.author_name}</Text>
-                <Text style={styles.postMeta}>{latestPost.time_ago}</Text>
-              </View>
-              <Ellipsis size={20} color={colors.textSecondary} />
-            </View>
-            <View style={styles.postBody}>
-              <Text style={styles.postText} numberOfLines={3}>
-                {latestPost.content}
-              </Text>
-              {latestPost.images?.[0] ? (
-                <Image source={latestPost.images[0]} style={styles.postThumb} contentFit="cover" transition={150} />
-              ) : null}
-            </View>
-            <View style={styles.postStats}>
-              <View style={styles.postStat}>
-                <Heart
-                  size={20}
-                  color={latestPost.liked ? colors.error : colors.textSecondary}
-                  fill={latestPost.liked ? colors.error : 'transparent'}
-                />
-                <Text style={styles.postStatText}>{latestPost.likes_count}</Text>
-              </View>
-              <View style={styles.postStat}>
-                <MessageCircle size={20} color={colors.textSecondary} />
-                <Text style={styles.postStatText}>{latestPost.comments_count}</Text>
-              </View>
-            </View>
-          </Pressable>
+            />
+          </View>
         ) : (
           <Text style={styles.sectionEmpty}>{t('home.noPosts')}</Text>
         )}
@@ -219,27 +321,36 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
           </Pressable>
         </View>
-        {latestArticle ? (
-          <Pressable
-            style={styles.learnCard}
-            onPress={() => router.push({ pathname: '/learn/[id]', params: { id: latestArticle.id } })}
-          >
-            <View style={styles.learnIcon}>
-              <BookOpen size={24} color={colors.primary} strokeWidth={2.2} />
-            </View>
-            <View style={styles.learnText}>
-              <Text style={styles.learnTitle} numberOfLines={1}>
-                {latestArticle.title}
-              </Text>
-              <Text style={styles.learnSubtitle} numberOfLines={1}>
-                {latestArticle.category}
-              </Text>
-            </View>
-          </Pressable>
+        {recentArticles.length > 0 ? (
+          <PagedSlider
+            data={recentArticles}
+            slideWidth={slideWidth}
+            keyExtractor={(article) => String(article.id)}
+            renderItem={(article) => (
+              <Pressable
+                style={styles.learnCard}
+                onPress={() => router.push({ pathname: '/learn/[id]', params: { id: article.id } })}
+              >
+                <View style={styles.learnIcon}>
+                  <BookOpen size={24} color={colors.primary} strokeWidth={2.2} />
+                </View>
+                <View style={styles.learnText}>
+                  <Text style={styles.learnTitle} numberOfLines={2}>
+                    {article.title}
+                  </Text>
+                  <Text style={styles.learnSubtitle} numberOfLines={1}>
+                    {article.category}
+                  </Text>
+                </View>
+              </Pressable>
+            )}
+          />
         ) : (
           <Text style={styles.sectionEmpty}>{t('home.noArticles')}</Text>
         )}
       </ScrollView>
+
+      <NotificationsSheet visible={bellOpen} onClose={() => setBellOpen(false)} />
     </SafeAreaView>
   )
 }
@@ -314,6 +425,54 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     paddingVertical: spacing.sm,
   },
+  suggestions: {
+    marginTop: -spacing.md,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+  },
+  suggestionDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  suggestionPressed: {
+    backgroundColor: colors.background,
+  },
+  suggestionThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  suggestionPhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  suggestionText: {
+    flex: 1,
+  },
+  suggestionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  suggestionMeta: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -353,15 +512,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
-  foodRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+  slider: {
     marginBottom: spacing.lg,
   },
   foodCard: {
-    flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: spacing.sm,
   },
   foodPhoto: {
@@ -397,13 +553,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   foodTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: 3,
   },
   foodMeta: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 2,
   },
@@ -425,12 +581,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   postCard: {
+    // Fills the slide so every page is the same height and the dots stay put.
+    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    marginBottom: spacing.lg,
   },
   postHeader: {
     flexDirection: 'row',

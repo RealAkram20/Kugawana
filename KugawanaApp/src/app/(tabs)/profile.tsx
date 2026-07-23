@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import {
@@ -9,8 +10,8 @@ import {
   HelpCircle,
   LogOut,
   MapPin,
-  Settings,
   ShoppingBag,
+  UserCog,
   Users,
   Wallet,
 } from 'lucide-react-native'
@@ -20,6 +21,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
+import { releasePushToken } from '../../hooks/usePushNotifications'
 import i18n from '../../locales/i18n'
 import { authService } from '../../services/auth.service'
 import { foodService } from '../../services/food.service'
@@ -28,12 +30,12 @@ import { Language, useAppStore } from '../../stores/app.store'
 import { useAuthStore } from '../../stores/auth.store'
 
 const iconColors = {
+  edit: colors.primary,
   language: colors.textPrimary,
   shared: colors.primary,
   requests: colors.accent,
   wallet: '#0F8A6B',
   members: '#2F6FED',
-  settings: '#2F6FED',
   help: '#7C3AED',
   logout: colors.error,
 }
@@ -78,6 +80,9 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           try {
+            // Release the device first, so the next person to sign in here
+            // does not inherit this account's pushes.
+            await releasePushToken()
             await authService.logout()
           } catch {
           } finally {
@@ -89,21 +94,13 @@ export default function ProfileScreen() {
     ])
   }
 
-  const comingSoon = () => Alert.alert(t('common.appName'), t('common.comingSoon'))
+  const editProfile = () => router.push('/profile/edit')
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
-          <View style={styles.topBarSide} />
           <Text style={styles.topBarTitle}>{t('profile.title')}</Text>
-          <Pressable
-            style={styles.topBarSide}
-            hitSlop={8}
-            onPress={() => router.push('/profile/settings')}
-          >
-            <Settings size={24} color={colors.textPrimary} strokeWidth={2} />
-          </Pressable>
         </View>
 
         <View style={styles.identity}>
@@ -115,7 +112,13 @@ export default function ProfileScreen() {
                 <Text style={styles.avatarInitial}>{user?.name?.slice(0, 1) ?? '?'}</Text>
               </View>
             )}
-            <Pressable style={styles.cameraBadge} hitSlop={8} onPress={comingSoon}>
+            <Pressable
+              style={styles.cameraBadge}
+              hitSlop={8}
+              onPress={editProfile}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.editProfile')}
+            >
               <Camera size={18} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
           </View>
@@ -131,6 +134,19 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.menu}>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={editProfile}
+          >
+            <UserCog size={24} color={iconColors.edit} strokeWidth={2} />
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>{t('profile.editProfile')}</Text>
+            </View>
+            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => setLangOpen((open) => !open)}
@@ -166,7 +182,7 @@ export default function ProfileScreen() {
 
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => router.push('/profile/donations')}
+            onPress={() => router.push('/(tabs)/share')}
           >
             <ShoppingBag size={24} color={iconColors.shared} strokeWidth={2} />
             <View style={styles.rowText}>
@@ -223,19 +239,6 @@ export default function ProfileScreen() {
 
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => router.push('/profile/settings')}
-          >
-            <Settings size={24} color={iconColors.settings} strokeWidth={2} />
-            <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>{t('profile.settings')}</Text>
-            </View>
-            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
-          </Pressable>
-
-          <View style={styles.divider} />
-
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => router.push('/profile/help')}
           >
             <HelpCircle size={24} color={iconColors.help} strokeWidth={2} />
@@ -258,6 +261,10 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
           </Pressable>
         </View>
+
+        <Text style={styles.version}>
+          {t('common.appName')} v{Constants.expoConfig?.version ?? '1.0.0'}
+        </Text>
       </ScrollView>
     </SafeAreaView>
   )
@@ -275,14 +282,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   topBar: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: spacing.sm,
-  },
-  topBarSide: {
-    width: 32,
-    alignItems: 'flex-end',
   },
   topBarTitle: {
     fontSize: 20,
@@ -410,5 +411,11 @@ const styles = StyleSheet.create({
   },
   langPillLabelActive: {
     color: colors.primary,
+  },
+  version: {
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: spacing.lg,
   },
 })

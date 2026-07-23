@@ -9,7 +9,6 @@ use App\Models\PointPackage;
 use App\Models\WalletTopup;
 use App\Services\WalletService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class WalletController extends Controller
@@ -35,18 +34,11 @@ class WalletController extends Controller
 
     public function approve(WalletTopup $topup): RedirectResponse
     {
-        if ($topup->status !== TopupStatus::Pending) {
+        $applied = app(WalletService::class)->applyTopup($topup, auth()->id());
+
+        if (! $applied) {
             return back()->with('toast', 'This request was already processed');
         }
-
-        DB::transaction(function () use ($topup) {
-            $topup->update([
-                'status' => TopupStatus::Approved,
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-            ]);
-            app(WalletService::class)->credit($topup->user, $topup->points, 'topup', (string) $topup->id);
-        });
 
         return back()->with('toast', "{$topup->points} points approved for {$topup->user->name}");
     }

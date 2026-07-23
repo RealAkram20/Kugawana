@@ -1,4 +1,4 @@
-import { Redirect, Tabs } from 'expo-router'
+import { Redirect, router, Tabs } from 'expo-router'
 import { CirclePlus, House, Plus, User, Users } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
@@ -50,7 +50,8 @@ function TabBar({ state, descriptors, navigation }: TabBarProps) {
       {renderTab('index')}
       {renderTab('share')}
       <View style={styles.fabSlot}>
-        <Pressable style={styles.fab} onPress={() => navigation.navigate('share')}>
+        {/* Straight to the form — the Share tab itself lists what you already shared. */}
+        <Pressable style={styles.fab} onPress={() => router.push('/food/create')}>
           <Plus size={30} color="#FFFFFF" strokeWidth={2.5} />
         </Pressable>
       </View>
@@ -73,7 +74,7 @@ export default function TabsLayout() {
       screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="index" options={{ title: t('home.homeTab') }} />
-      <Tabs.Screen name="share" options={{ title: t('home.shareTab') }} />
+      <Tabs.Screen name="share" options={{ title: t('home.myShares') }} />
       <Tabs.Screen name="community" options={{ title: t('community.title') }} />
       <Tabs.Screen name="profile" options={{ title: t('profile.title') }} />
     </Tabs>

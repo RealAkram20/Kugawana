@@ -4,7 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, ChevronRight, Clock, MapPin } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '../../../constants/colors'
 import { availableUntilParts } from '../../../constants/datetime'
 import { statusLabelKey } from '../../../constants/foodStatus'
@@ -17,6 +17,7 @@ export default function SharedFoodDetailScreen() {
   const { t, i18n } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
   const foodId = Number(id)
 
   const { data: food, isLoading } = useQuery({
@@ -44,7 +45,7 @@ export default function SharedFoodDetailScreen() {
       { text: t('sharedFood.markCompleted'), onPress: () => complete.mutate() },
     ])
 
-  const back = () => (router.canGoBack() ? router.back() : router.replace('/profile/donations'))
+  const back = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/share'))
 
   if (isLoading || !food) {
     return (
@@ -165,12 +166,12 @@ export default function SharedFoodDetailScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
         <Pressable
           style={({ pressed }) => [styles.action, styles.editBtn, pressed && styles.pressed]}
           onPress={() => router.push({ pathname: '/food/edit/[id]', params: { id: foodId } })}
         >
-          <Text style={styles.editLabel}>{t('sharedFood.edit')}</Text>
+          <Text style={styles.editLabel} numberOfLines={1}>{t('sharedFood.edit')}</Text>
         </Pressable>
         <Pressable
           disabled={!food.can_complete || complete.isPending}
@@ -185,7 +186,7 @@ export default function SharedFoodDetailScreen() {
           {complete.isPending ? (
             <ActivityIndicator color={colors.surface} />
           ) : (
-            <Text style={styles.completeLabel}>{t('sharedFood.markCompleted')}</Text>
+            <Text style={styles.completeLabel} numberOfLines={2}>{t('sharedFood.markCompleted')}</Text>
           )}
         </Pressable>
       </View>
@@ -385,7 +386,9 @@ const styles = StyleSheet.create({
   },
   action: {
     flex: 1,
-    height: 58,
+    minHeight: 58,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -399,6 +402,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: colors.primary,
+    textAlign: 'center',
   },
   completeBtn: {
     backgroundColor: colors.primary,
@@ -407,6 +411,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: colors.surface,
+    textAlign: 'center',
   },
   actionDisabled: {
     opacity: 0.5,

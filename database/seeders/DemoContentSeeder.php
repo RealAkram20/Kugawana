@@ -118,6 +118,7 @@ class DemoContentSeeder extends Seeder
         $grace = $users['grace@example.com'];
         $samuel = $users['samuel@example.com'];
         $lydia = $users['lydia@example.com'];
+        $amina = $users['amina@example.com'];
 
         $units = Unit::pluck('id', 'symbol');
 
@@ -135,6 +136,13 @@ class DemoContentSeeder extends Seeder
             ['Fresh Milk', 2, 'L', 'Beverages', $lydia, 'milk.jpg', 'Ntinda, Kampala', 6, 18, FoodStatus::Published],
             ['Eggs', 30, 'pcs', 'Fresh', $samuel, 'eggs.jpg', 'Bweyogerere, Kampala', 10, 90, FoodStatus::Published],
             ['Brown Sugar', 2, 'Kg', 'Dry foods', $lydia, 'sugar.jpg', 'Ntinda, Kampala', 48, 240, FoodStatus::Completed],
+
+            // Amina is the demo sign-in, so she needs her own shares for the
+            // My Shared Food tab — one per status tab: active, in review, done.
+            ['Sweet Potatoes', 4, 'Kg', 'Vegetables', $amina, 'vegetables.jpg', 'Nakawa, Kampala', 4, 40, FoodStatus::Published],
+            ['Ripe Avocados', 8, 'pcs', 'Fruits', $amina, 'bananas.jpg', 'Nakawa, Kampala', 9, 56, FoodStatus::Published],
+            ['Fresh Chapati', 10, 'pcs', 'Bakery', $amina, 'bread.jpg', 'Nakawa, Kampala', 1, 16, FoodStatus::Pending],
+            ['Green Peppers', 2, 'Kg', 'Vegetables', $amina, 'onions.jpg', 'Nakawa, Kampala', 60, 300, FoodStatus::Completed],
         ];
 
         foreach ($rows as [$title, $amount, $unit, $category, $donor, $image, $address, $ago, $until, $status]) {

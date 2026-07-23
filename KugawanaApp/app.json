@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Kugawana",
-    "slug": "KugawanaApp",
+    "slug": "rioakram",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -17,7 +17,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.KugawanaApp"
+      "package": "com.anonymous.KugawanaApp",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -38,11 +41,19 @@
         {
           "photosPermission": "Allow Kugawana to access your photos so you can add pictures of the food you are sharing."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "eed7fae5-5a88-4609-802e-c65790a21139"
+      }
+    },
+    "owner": "realakram20s-team"
   }
 }

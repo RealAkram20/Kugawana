@@ -1,8 +1,9 @@
 import { router } from 'expo-router'
 import { Check, ChevronRight } from 'lucide-react-native'
 import { useState } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useResponsive } from '../../hooks/useResponsive'
 import { Language, useAppStore } from '../../stores/app.store'
 
 const screenColors = {
@@ -28,53 +29,110 @@ export default function LanguageScreen() {
   const storedLanguage = useAppStore((state) => state.language)
   const setLanguage = useAppStore((state) => state.setLanguage)
   const [selected, setSelected] = useState<Language>(storedLanguage ?? 'en')
+  const { s, vs, ms, compact, tablet, maxContentWidth } = useResponsive()
 
   const submit = () => {
     setLanguage(selected)
     router.push('/(auth)/register')
   }
 
+  const gutter = s(tablet ? 32 : 24)
+  const flagSize = s(compact ? 44 : 50)
+  const checkSize = s(27)
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.globeWrap}>
-        <Image source={require('../../../assets/images/globe.png')} style={styles.globe} resizeMode="contain" />
-      </View>
-
-      <Text style={styles.title}>Choose Your{'\n'}Language</Text>
-      <Text style={styles.subtitle}>Chagua Lugha / Choisissez la langue</Text>
-
-      <View style={styles.list}>
-        {options.map((option) => {
-          const active = selected === option.code
-          return (
-            <Pressable
-              key={option.code}
-              onPress={() => setSelected(option.code)}
-              style={[styles.card, active && styles.cardActive]}
-            >
-              <Image source={option.flag} style={styles.flag} />
-              <View style={styles.cardText}>
-                <Text style={styles.cardName}>{option.name}</Text>
-                <Text style={styles.cardCaption}>{option.caption}</Text>
-              </View>
-              {active ? (
-                <View style={styles.check}>
-                  <Check color="#FFFFFF" size={16} strokeWidth={3} />
-                </View>
-              ) : null}
-            </Pressable>
-          )
-        })}
-      </View>
-
-      <View style={styles.footer}>
-        <Pressable onPress={submit} style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-          <Text style={styles.buttonLabel}>Continue</Text>
-          <View style={styles.buttonArrow}>
-            <ChevronRight color="#FFFFFF" size={24} strokeWidth={2.5} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={false}
+        bounces={false}
+      >
+        <View style={[styles.content, { maxWidth: maxContentWidth, paddingHorizontal: gutter }]}>
+          <View style={[styles.globeWrap, { paddingTop: vs(14) }]}>
+            <Image
+              source={require('../../../assets/images/globe.png')}
+              style={{ width: s(34), height: s(34) }}
+              resizeMode="contain"
+            />
           </View>
-        </Pressable>
-      </View>
+
+          <Text
+            style={[styles.title, { fontSize: ms(34), lineHeight: ms(34) * 1.28, marginTop: vs(28) }]}
+            maxFontSizeMultiplier={1.25}
+          >
+            Choose Your{'\n'}Language
+          </Text>
+          <Text
+            style={[styles.subtitle, { fontSize: ms(16), marginTop: vs(14) }]}
+            maxFontSizeMultiplier={1.3}
+          >
+            Chagua Lugha / Choisissez la langue
+          </Text>
+
+          <View style={{ marginTop: vs(32), gap: vs(16) }}>
+            {options.map((option) => {
+              const active = selected === option.code
+              return (
+                <Pressable
+                  key={option.code}
+                  onPress={() => setSelected(option.code)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  style={[
+                    styles.card,
+                    { paddingVertical: vs(24), paddingHorizontal: s(14), borderRadius: s(14) },
+                    active && styles.cardActive,
+                  ]}
+                >
+                  <Image
+                    source={option.flag}
+                    style={{ width: flagSize, height: flagSize, borderRadius: flagSize / 2 }}
+                  />
+                  <View style={[styles.cardText, { marginLeft: s(18) }]}>
+                    <Text style={[styles.cardName, { fontSize: ms(20) }]} maxFontSizeMultiplier={1.3}>
+                      {option.name}
+                    </Text>
+                    <Text style={[styles.cardCaption, { fontSize: ms(14) }]} maxFontSizeMultiplier={1.3}>
+                      {option.caption}
+                    </Text>
+                  </View>
+                  {active ? (
+                    <View
+                      style={[
+                        styles.check,
+                        { width: checkSize, height: checkSize, borderRadius: checkSize / 2 },
+                      ]}
+                    >
+                      <Check color="#FFFFFF" size={s(16)} strokeWidth={3} />
+                    </View>
+                  ) : null}
+                </Pressable>
+              )
+            })}
+          </View>
+
+          <View style={[styles.footer, { marginTop: vs(32), paddingBottom: vs(24) }]}>
+            <Pressable
+              onPress={submit}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.button,
+                { minHeight: Math.max(48, s(58)), borderRadius: s(13), paddingHorizontal: s(52) },
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={[styles.buttonLabel, { fontSize: ms(19) }]} maxFontSizeMultiplier={1.3}>
+                Continue
+              </Text>
+              <View style={[styles.buttonArrow, { right: s(22) }]}>
+                <ChevronRight color="#FFFFFF" size={s(24)} strokeWidth={2.5} />
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -83,34 +141,29 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: screenColors.background,
-    paddingHorizontal: 28,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+  },
+  content: {
+    flexGrow: 1,
+    width: '100%',
   },
   globeWrap: {
     alignItems: 'flex-end',
-    paddingTop: 14,
-    marginRight: -12,
-  },
-  globe: {
-    width: 34,
-    height: 34,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 44,
     fontWeight: '700',
     color: screenColors.title,
     textAlign: 'center',
-    marginTop: 64,
   },
   subtitle: {
-    fontSize: 16,
     color: screenColors.subtitle,
     textAlign: 'center',
-    marginTop: 18,
-  },
-  list: {
-    marginTop: 44,
-    gap: 18,
   },
   card: {
     flexDirection: 'row',
@@ -118,37 +171,23 @@ const styles = StyleSheet.create({
     backgroundColor: screenColors.card,
     borderWidth: 1.5,
     borderColor: screenColors.cardBorder,
-    borderRadius: 14,
-    paddingVertical: 25,
-    paddingHorizontal: 14,
   },
   cardActive: {
     borderColor: screenColors.selectedBorder,
     borderWidth: 2,
   },
-  flag: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
   cardText: {
     flex: 1,
-    marginLeft: 18,
   },
   cardName: {
-    fontSize: 20,
     fontWeight: '700',
     color: screenColors.name,
   },
   cardCaption: {
-    fontSize: 14,
     color: screenColors.caption,
     marginTop: 3,
   },
   check: {
-    width: 27,
-    height: 27,
-    borderRadius: 14,
     backgroundColor: screenColors.check,
     alignItems: 'center',
     justifyContent: 'center',
@@ -157,12 +196,10 @@ const styles = StyleSheet.create({
   footer: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: 72,
   },
   button: {
     backgroundColor: screenColors.green,
-    borderRadius: 13,
-    minHeight: 58,
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -172,11 +209,9 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     color: '#FFFFFF',
-    fontSize: 19,
     fontWeight: '600',
   },
   buttonArrow: {
     position: 'absolute',
-    right: 22,
   },
 })

@@ -16,10 +16,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 'local-session' is the offline demo session created by the OTP screen;
-    // it can never authenticate, so a 401 must not log the user out
-    const token = useAuthStore.getState().token
-    if (error.response?.status === 401 && token !== 'local-session') {
+    if (error.response?.status === 401) {
       useAuthStore.getState().clear()
     }
     return Promise.reject(error)

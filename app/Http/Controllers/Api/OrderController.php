@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\FoodDonation;
 use App\Models\Order;
+use App\Notifications\KugawanaNotification;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -105,6 +106,13 @@ class OrderController extends Controller
             }
         });
 
+        $this->notifyDonor(
+            $order,
+            'order.cancelled',
+            'A request was cancelled',
+            "{$request->user()->name} cancelled their request for \"{$order->foodDonation?->title}\"."
+        );
+
         return response()->json([
             'success' => true,
             'data' => new OrderResource($this->withDetail($order->fresh())),
@@ -130,6 +138,13 @@ class OrderController extends Controller
             'status' => OrderStatus::Completed,
             'completed_at' => now(),
         ]);
+
+        $this->notifyDonor(
+            $order,
+            'order.completed',
+            'Food collected',
+            "{$request->user()->name} confirmed receiving \"{$order->foodDonation?->title}\"."
+        );
 
         return response()->json([
             'success' => true,
@@ -198,10 +213,30 @@ class OrderController extends Controller
 
         $order->load('foodDonation.category');
 
+        $this->notifyDonor(
+            $order,
+            'order.requested',
+            'New request for your food',
+            "{$request->user()->name} requested \"{$food->title}\"."
+        );
+
         return response()->json([
             'success' => true,
             'data' => new OrderResource($order),
             'message' => 'Request placed',
         ], 201);
+    }
+
+    /**
+     * Tells the person who shared the food that something happened to their
+     * listing. Never notifies someone about their own action.
+     */
+    private function notifyDonor(Order $order, string $type, string $title, string $body): void
+    {
+        $donor = $order->foodDonation?->donor;
+
+        if ($donor && $donor->id !== $order->receiver_id) {
+            $donor->notify(new KugawanaNotification($type, $title, $body, 'food/shared', $order->food_donation_id));
+        }
     }
 }

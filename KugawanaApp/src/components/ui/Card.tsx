@@ -1,12 +1,12 @@
 import { ReactNode } from 'react'
-import { Pressable, StyleSheet, View, ViewStyle } from 'react-native'
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 
 interface CardProps {
   children: ReactNode
   onPress?: () => void
-  style?: ViewStyle
+  style?: StyleProp<ViewStyle>
 }
 
 export function Card({ children, onPress, style }: CardProps) {

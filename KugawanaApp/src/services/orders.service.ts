@@ -57,11 +57,34 @@ export const walletService = {
     return data.data
   },
 
-  async topup(packageId: number, paymentMethod: string, reference?: string): Promise<void> {
-    await api.post('/wallet/topup', {
+  async topup(
+    packageId: number,
+    paymentMethod: string,
+    reference?: string,
+  ): Promise<TopupResponse> {
+    const { data } = await api.post('/wallet/topup', {
       point_package_id: packageId,
       payment_method: paymentMethod,
       payment_reference: reference,
     })
+    return data.data
   },
+
+  async topupStatus(topupId: number): Promise<TopupStatusResponse> {
+    const { data } = await api.get(`/wallet/topup/${topupId}/status`)
+    return data.data
+  },
+}
+
+export interface TopupResponse {
+  id: number
+  status: string
+  redirect_url?: string
+  order_tracking_id?: string
+}
+
+export interface TopupStatusResponse {
+  id: number
+  status: string
+  balance: number
 }
