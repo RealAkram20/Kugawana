@@ -238,7 +238,12 @@ export default function HomeScreen() {
                     {item.pickup_address ?? ''}
                   </Text>
                   <Text style={styles.foodMeta} numberOfLines={1}>
-                    {item.quantity}
+                    {item.is_split
+                      ? t('food.unitsLeft', {
+                          available: item.units_available,
+                          total: item.units_total,
+                        })
+                      : item.quantity}
                   </Text>
                   <View style={styles.freshRow}>
                     <View style={styles.freshDot} />

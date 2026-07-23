@@ -6,6 +6,8 @@ use App\Enums\FoodStatus;
 use App\Enums\UserRole;
 use App\Filament\Admin\Resources\FoodDonationResource\Pages;
 use App\Models\FoodDonation;
+use App\Models\User;
+use App\Services\FoodSplitService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -96,6 +98,11 @@ class FoodDonationResource extends Resource
                 Tables\Columns\TextColumn::make('donor.name')->label('Donor')->searchable(),
                 Tables\Columns\TextColumn::make('category.name')->label('Category'),
                 Tables\Columns\TextColumn::make('quantity')->label('Quantity'),
+                Tables\Columns\TextColumn::make('units_available')
+                    ->label('Units left')
+                    ->state(fn (FoodDonation $record) => $record->isSplit()
+                        ? "{$record->units_available} of {$record->units_total} × {$record->unit_quantity}"
+                        : 'Whole'),
                 Tables\Columns\TextColumn::make('status')->badge(),
                 Tables\Columns\TextColumn::make('expiry_date')->dateTime()->sortable(),
                 Tables\Columns\TextColumn::make('points_required')->label('Points'),
@@ -143,6 +150,54 @@ class FoodDonationResource extends Resource
                         ]);
                     })
                     ->visible(fn (FoodDonation $record) => in_array($record->status, [FoodStatus::Pending, FoodStatus::Reviewed])),
+                Tables\Actions\Action::make('split')
+                    ->label(fn (FoodDonation $record) => $record->isSplit() ? 'Edit units' : 'Split')
+                    ->icon('heroicon-o-squares-2x2')
+                    ->color('warning')
+                    ->modalDescription(fn (FoodDonation $record) => "Break {$record->quantity} into portions a household can finish.")
+                    ->form([
+                        Forms\Components\TextInput::make('unit_amount')
+                            ->label('Unit size')
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->step(0.01)
+                            ->required()
+                            ->suffix(fn (FoodDonation $record) => $record->unit?->symbol)
+                            ->maxValue(fn (FoodDonation $record) => (float) $record->amount)
+                            ->default(fn (FoodDonation $record) => $record->unit_amount),
+                        Forms\Components\TextInput::make('points_required')
+                            ->label('Points per unit')
+                            ->numeric()
+                            ->minValue(0)
+                            ->required()
+                            ->default(fn (FoodDonation $record) => $record->points_required ?: 50),
+                        Forms\Components\Select::make('donor_id')
+                            ->label('Credit the food to')
+                            ->relationship('donor', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->default(fn (FoodDonation $record) => $record->donor_id)
+                            ->helperText('The person who brought the food in. Create them here if they have no account yet.')
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')->required(),
+                                Forms\Components\TextInput::make('phone')->tel()->unique('users', 'phone'),
+                                Forms\Components\TextInput::make('email')->email()->unique('users', 'email'),
+                            ])
+                            ->createOptionUsing(fn (array $data) => app(FoodSplitService::class)
+                                ->createSource($data + ['phone' => null, 'email' => null], auth()->user()->country_id)
+                                ->getKey()),
+                    ])
+                    ->action(function (FoodDonation $record, array $data) {
+                        app(FoodSplitService::class)->split(
+                            $record,
+                            (float) $data['unit_amount'],
+                            (int) $data['points_required'],
+                            auth()->user(),
+                            User::find($data['donor_id']),
+                        );
+                    })
+                    ->visible(fn (FoodDonation $record) => ! in_array($record->status, [FoodStatus::Rejected, FoodStatus::Expired, FoodStatus::Completed])),
                 Tables\Actions\Action::make('publish')
                     ->icon('heroicon-o-eye')
                     ->color('primary')

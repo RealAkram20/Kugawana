@@ -118,6 +118,19 @@ export default function SharedFoodDetailScreen() {
           <Text style={styles.detailValue}>{food.quantity}</Text>
         </View>
 
+        {food.is_split ? (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('sharedFood.splitInto')}</Text>
+            <Text style={styles.detailValue}>
+              {t('sharedFood.unitsShared', {
+                total: food.units_total,
+                size: food.unit_quantity,
+                claimed: (food.units_total ?? 0) - (food.units_available ?? 0),
+              })}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>{t('sharedFood.availableUntil')}</Text>
           <Text style={styles.detailValue}>{untilLabel}</Text>

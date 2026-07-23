@@ -38,6 +38,8 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::post('/donations/{donation}/reject', [DonationController::class, 'reject'])->name('donations.reject');
         Route::post('/donations/{donation}/publish', [DonationController::class, 'publish'])->name('donations.publish');
         Route::post('/donations/{donation}/status', [DonationController::class, 'setStatus'])->name('donations.status');
+        Route::post('/donations/{donation}/split', [DonationController::class, 'split'])->name('donations.split');
+        Route::post('/donations/{donation}/unsplit', [DonationController::class, 'unsplit'])->name('donations.unsplit');
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('/orders/{order}/accept', [OrderController::class, 'accept'])->name('orders.accept');

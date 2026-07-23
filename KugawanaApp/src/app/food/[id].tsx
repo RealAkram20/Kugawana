@@ -20,17 +20,24 @@ export default function FoodDetailScreen() {
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
   const [method, setMethod] = useState<'pickup' | 'delivery'>('pickup')
+  const [units, setUnits] = useState(1)
 
   const { data: food } = useQuery({
     queryKey: ['food', Number(id)],
     queryFn: () => foodService.getListing(Number(id)),
   })
 
+  // A whole batch always goes as one piece; a split one is capped by what is
+  // left on the shelf.
+  const maxUnits = food?.is_split ? Math.max(1, food.units_available ?? 1) : 1
+  const claimed = Math.min(units, maxUnits)
+  const totalPoints = (food?.points_required ?? 0) * claimed
+
   const request = useMutation({
-    mutationFn: () => ordersService.placeOrder(Number(id), method),
+    mutationFn: () => ordersService.placeOrder(Number(id), method, undefined, claimed),
     onSuccess: () => {
       if (user && food) {
-        setUser({ ...user, wallet_balance: user.wallet_balance - food.points_required })
+        setUser({ ...user, wallet_balance: user.wallet_balance - totalPoints })
       }
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       queryClient.invalidateQueries({ queryKey: ['food'] })
@@ -61,11 +68,25 @@ export default function FoodDetailScreen() {
 
         <View style={styles.head}>
           <Text style={styles.title}>{food.title}</Text>
-          <Badge label={`${food.points_required} ${t('common.points')}`} tone="accent" />
+          <Badge
+            label={
+              food.is_split
+                ? t('food.pointsPerUnit', { points: food.points_required })
+                : `${food.points_required} ${t('common.points')}`
+            }
+            tone="accent"
+          />
         </View>
         <Text style={styles.meta}>
-          {food.category?.name ?? ''} · {food.quantity}
+          {food.category?.name ?? ''} ·{' '}
+          {food.is_split ? t('food.perUnit', { size: food.unit_quantity }) : food.quantity}
         </Text>
+
+        {food.is_split ? (
+          <Text style={styles.stock}>
+            {t('food.unitsLeft', { available: food.units_available, total: food.units_total })}
+          </Text>
+        ) : null}
 
         {food.description ? <Text style={styles.description}>{food.description}</Text> : null}
 
@@ -102,6 +123,40 @@ export default function FoodDetailScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {food.is_split ? (
+          <Card style={styles.unitCard}>
+            <View style={styles.unitRow}>
+              <Text style={styles.unitLabel}>{t('food.howMuch')}</Text>
+              <View style={styles.stepper}>
+                <Pressable
+                  onPress={() => setUnits((value) => Math.max(1, value - 1))}
+                  disabled={claimed <= 1}
+                  style={[styles.step, claimed <= 1 && styles.stepDisabled]}
+                  accessibilityLabel={t('food.fewerUnits')}
+                >
+                  <Text style={styles.stepText}>−</Text>
+                </Pressable>
+                <Text style={styles.stepValue}>{claimed}</Text>
+                <Pressable
+                  onPress={() => setUnits((value) => Math.min(maxUnits, value + 1))}
+                  disabled={claimed >= maxUnits}
+                  style={[styles.step, claimed >= maxUnits && styles.stepDisabled]}
+                  accessibilityLabel={t('food.moreUnits')}
+                >
+                  <Text style={styles.stepText}>+</Text>
+                </Pressable>
+              </View>
+            </View>
+            <Text style={styles.unitTotal}>
+              {t('food.youReceive', {
+                amount: claimed * (food.unit_amount ?? 0),
+                unit: food.unit?.symbol ?? '',
+                points: totalPoints,
+              })}
+            </Text>
+          </Card>
+        ) : null}
 
         <Button label={t('food.request')} onPress={() => request.mutate()} loading={request.isPending} />
       </ScrollView>
@@ -156,11 +211,68 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: spacing.md,
   },
+  stock: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
   description: {
     fontSize: 14,
     lineHeight: 21,
     color: colors.textPrimary,
     marginBottom: spacing.md,
+  },
+  unitCard: {
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  unitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  unitLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  step: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  stepDisabled: {
+    opacity: 0.4,
+  },
+  stepText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  stepValue: {
+    minWidth: 32,
+    textAlign: 'center',
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  unitTotal: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
   infoCard: {
     marginBottom: spacing.lg,

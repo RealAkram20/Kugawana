@@ -37,6 +37,13 @@ export interface FoodListing {
   quantity: string
   amount: number
   unit: Unit | null
+  /** Admins can break a bulk donation into portions people can finish. */
+  is_split: boolean
+  /** Size of one unit, e.g. 1, with `unit_quantity` the label "1 Kg". */
+  unit_amount: number | null
+  unit_quantity: string | null
+  units_total: number | null
+  units_available: number | null
   category: FoodCategory | null
   category_icon: string
   images: string[]

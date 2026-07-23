@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\FoodSplitService;
 use App\Services\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +53,14 @@ class OrderController extends Controller
             $order->update(['status' => OrderStatus::Cancelled]);
             if ($order->points_spent > 0) {
                 app(WalletService::class)->credit($order->receiver, $order->points_spent, 'order refund', (string) $order->id);
+            }
+
+            // The units this order held go back on the shelf for someone else.
+            $food = $order->foodDonation;
+
+            if ($food) {
+                app(FoodSplitService::class)->release($food, $order->units);
+                app(FoodSplitService::class)->republishIfBackInStock($food);
             }
         });
 

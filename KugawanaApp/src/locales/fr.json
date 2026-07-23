@@ -95,7 +95,14 @@
     "expiry": "À consommer avant",
     "donor": "Partagé par",
     "requested": "Demande envoyée. Suivez la dans vos demandes.",
-    "notEnoughPoints": "Points insuffisants. Rechargez votre portefeuille."
+    "notEnoughPoints": "Points insuffisants. Rechargez votre portefeuille.",
+    "perUnit": "{{size}} par portion",
+    "pointsPerUnit": "{{points}} points par portion",
+    "unitsLeft": "{{available}} portions sur {{total}} restantes",
+    "howMuch": "Quelle quantité vous faut il",
+    "moreUnits": "Une portion de plus",
+    "fewerUnits": "Une portion de moins",
+    "youReceive": "Vous recevez {{amount}} {{unit}} pour {{points}} points"
   },
   "share": {
     "title": "Partager la nourriture",
@@ -285,6 +292,8 @@
   "sharedFood": {
     "title": "Mes partages",
     "sharedAgo": "Partagé {{time}}",
+    "splitInto": "Divisé en",
+    "unitsShared": "{{total}} × {{size}} · {{claimed}} réclamées",
     "active": "Actif",
     "foodDetails": "Détails de l'aliment",
     "availableUntil": "Disponible jusqu'à",

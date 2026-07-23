@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Enums\FoodStatus;
 use App\Enums\OrderStatus;
 use App\Exceptions\InsufficientPointsException;
+use App\Exceptions\OutOfStockException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\FoodDonation;
 use App\Models\Order;
 use App\Notifications\KugawanaNotification;
+use App\Services\FoodSplitService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,7 +80,7 @@ class OrderController extends Controller
         ]);
     }
 
-    public function cancel(Request $request, Order $order, WalletService $wallet): JsonResponse
+    public function cancel(Request $request, Order $order, WalletService $wallet, FoodSplitService $splitter): JsonResponse
     {
         $this->authorizeReceiver($request, $order);
 
@@ -90,18 +92,26 @@ class OrderController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($order, $wallet) {
+        DB::transaction(function () use ($order, $wallet, $splitter) {
             $order->update(['status' => OrderStatus::Cancelled]);
 
             if ($order->points_spent > 0) {
                 $wallet->credit($order->receiver, $order->points_spent, 'order refund', (string) $order->id);
             }
 
-            // store() reserves the listing; releasing it here keeps the food
-            // available to other receivers instead of stranding it.
+            // store() takes the units off the shelf and reserves the listing;
+            // both are undone here so the food stays available to others.
             $food = $order->foodDonation;
 
-            if ($food && $food->status === FoodStatus::Reserved) {
+            if (! $food) {
+                return;
+            }
+
+            $splitter->release($food, $order->units);
+
+            if ($food->isSplit()) {
+                $splitter->republishIfBackInStock($food);
+            } elseif ($food->status === FoodStatus::Reserved) {
                 $food->update(['status' => FoodStatus::Published]);
             }
         });
@@ -172,12 +182,13 @@ class OrderController extends Controller
         ]);
     }
 
-    public function store(Request $request, WalletService $wallet): JsonResponse
+    public function store(Request $request, WalletService $wallet, FoodSplitService $splitter): JsonResponse
     {
         $data = $request->validate([
             'food_donation_id' => ['required', 'exists:food_donations,id'],
             'delivery_method' => ['required', 'in:pickup,delivery'],
             'delivery_address' => ['nullable', 'string', 'max:255'],
+            'units' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $food = FoodDonation::findOrFail($data['food_donation_id']);
@@ -189,16 +200,36 @@ class OrderController extends Controller
             ], 422);
         }
 
-        try {
-            $order = DB::transaction(function () use ($request, $wallet, $food, $data) {
-                $wallet->deduct($request->user(), $food->points_required, 'order', 'food ' . $food->id);
+        // A whole batch is always claimed in one piece; only a split one lets
+        // the receiver decide how much they can actually use.
+        $units = $food->isSplit() ? max(1, (int) ($data['units'] ?? 1)) : 1;
 
-                $food->update(['status' => FoodStatus::Reserved]);
+        if ($food->isSplit() && $units > $food->units_available) {
+            return response()->json([
+                'success' => false,
+                'message' => $food->units_available > 0
+                    ? "Only {$food->units_available} units are left."
+                    : 'This food is no longer available',
+            ], 422);
+        }
+
+        $points = $food->points_required * $units;
+
+        try {
+            $order = DB::transaction(function () use ($request, $wallet, $splitter, $food, $data, $units, $points) {
+                $splitter->claim($food, $units);
+
+                $wallet->deduct($request->user(), $points, 'order', 'food ' . $food->id);
+
+                if ($splitter->shouldReserve($food)) {
+                    $food->update(['status' => FoodStatus::Reserved]);
+                }
 
                 return Order::create([
                     'receiver_id' => $request->user()->id,
                     'food_donation_id' => $food->id,
-                    'points_spent' => $food->points_required,
+                    'points_spent' => $points,
+                    'units' => $units,
                     'delivery_method' => $data['delivery_method'],
                     'delivery_address' => $data['delivery_address'] ?? null,
                     'status' => OrderStatus::Pending,
@@ -208,6 +239,11 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have enough points for this food',
+            ], 422);
+        } catch (OutOfStockException) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Someone just claimed the last of this food',
             ], 422);
         }
 

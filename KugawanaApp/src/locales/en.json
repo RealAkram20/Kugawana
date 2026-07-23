@@ -95,7 +95,14 @@
     "expiry": "Best before",
     "donor": "Shared by",
     "requested": "Request sent. Track it in your requests.",
-    "notEnoughPoints": "You do not have enough points. Top up your wallet."
+    "notEnoughPoints": "You do not have enough points. Top up your wallet.",
+    "perUnit": "{{size}} per unit",
+    "pointsPerUnit": "{{points}} points per unit",
+    "unitsLeft": "{{available}} of {{total}} units left",
+    "howMuch": "How much do you need",
+    "moreUnits": "One more unit",
+    "fewerUnits": "One less unit",
+    "youReceive": "You receive {{amount}} {{unit}} for {{points}} points"
   },
   "share": {
     "title": "Share food",
@@ -285,6 +292,8 @@
   "sharedFood": {
     "title": "My Shared Food",
     "sharedAgo": "Shared {{time}}",
+    "splitInto": "Split into",
+    "unitsShared": "{{total}} × {{size}} · {{claimed}} claimed",
     "active": "Active",
     "foodDetails": "Food Details",
     "availableUntil": "Available Until",

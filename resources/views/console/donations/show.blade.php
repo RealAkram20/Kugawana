@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Storage;
 
 $canDecide = in_array($donation->status, [FoodStatus::Pending, FoodStatus::Reviewed]);
 $canPublish = in_array($donation->status, [FoodStatus::Approved, FoodStatus::Collected, FoodStatus::Stored]);
+$canSplit = ! in_array($donation->status, [FoodStatus::Rejected, FoodStatus::Expired, FoodStatus::Completed]);
+$unitSymbol = $donation->unit?->symbol;
 @endphp
 
 <a class="btn btn-ghost" href="{{ route('console.donations.index') }}" style="margin-bottom:14px">← Back to donations</a>
@@ -15,7 +17,9 @@ $canPublish = in_array($donation->status, [FoodStatus::Approved, FoodStatus::Col
 <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:22px;flex-wrap:wrap">
   <div>
     <h2 style="margin:0 0 6px">{{ $donation->title }}</h2>
-    <div class="text-muted" style="font-size:14px">FD-{{ $donation->id }} · {{ $donation->category?->name }} · {{ $donation->quantity }}</div>
+    <div class="text-muted" style="font-size:14px">
+      FD-{{ $donation->id }} · {{ $donation->category?->name }} · {{ $donation->quantity }}@if ($donation->isSplit()) · {{ $donation->unit_quantity }} units, {{ $donation->units_available }} of {{ $donation->units_total }} left @endif
+    </div>
   </div>
   <div style="flex:1"></div>
   <span class="tag {{ ConsoleUi::tagClass($donation->status->value) }}" style="font-size:13px;padding:6px 14px">{{ $donation->status->getLabel() }}</span>
@@ -69,6 +73,86 @@ $canPublish = in_array($donation->status, [FoodStatus::Approved, FoodStatus::Col
   </div>
 
   <div style="display:flex;flex-direction:column;gap:16px">
+    @if ($canSplit)
+      <div class="panel">
+        <h5 style="margin:0 0 4px">Consumable units</h5>
+        <p class="text-muted" style="font-size:13px;margin:0 0 14px">
+          Break {{ $donation->quantity }} into portions a household can finish.
+        </p>
+
+        @if ($donation->isSplit())
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:16px">
+            <div><div class="detail-label">Unit size</div><div style="font-size:14px">{{ $donation->unit_quantity }}</div></div>
+            <div><div class="detail-label">Points per unit</div><div style="font-size:14px">{{ $donation->points_required }}</div></div>
+            <div><div class="detail-label">Available</div><div style="font-size:14px">{{ $donation->units_available }} of {{ $donation->units_total }}</div></div>
+            <div><div class="detail-label">Claimed</div><div style="font-size:14px">{{ $donation->unitsClaimed() }}</div></div>
+            @if ($donation->split_remainder > 0)
+              <div><div class="detail-label">Left over</div><div style="font-size:14px">{{ rtrim(rtrim(number_format($donation->split_remainder, 2), '0'), '.') }} {{ $unitSymbol }}</div></div>
+            @endif
+            <div><div class="detail-label">Split by</div><div style="font-size:14px">{{ $donation->splitter?->name ?: '—' }}</div></div>
+          </div>
+        @endif
+
+        <form method="POST" action="{{ route('console.donations.split', $donation) }}">
+          @csrf
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="field">
+              <label>Unit size{{ $unitSymbol ? " ({$unitSymbol})" : '' }}</label>
+              <input class="input" type="number" name="unit_amount" step="0.01" min="0.01" max="{{ $donation->amount }}" value="{{ old('unit_amount', $donation->unit_amount) }}" required>
+            </div>
+            <div class="field">
+              <label>Points per unit</label>
+              <input class="input" type="number" name="points_required" min="0" value="{{ old('points_required', $donation->points_required ?: 50) }}" required>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:12px">
+            <label>Credit the food to</label>
+            <select class="input" name="source_id">
+              @foreach ($sources as $person)
+                <option value="{{ $person->id }}" @selected($donation->donor_id === $person->id)>{{ $person->name }}{{ $person->phone ? " · {$person->phone}" : '' }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <details style="margin-bottom:16px">
+            <summary style="font-size:13px;cursor:pointer;color:var(--color-neutral-600)">The donor is not in the system yet</summary>
+            <div style="display:grid;gap:10px;margin-top:12px">
+              <div class="field">
+                <label>Donor name</label>
+                <input class="input" name="source_name" value="{{ old('source_name') }}" placeholder="Leave blank to use the choice above">
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="field">
+                  <label>Phone</label>
+                  <input class="input" name="source_phone" value="{{ old('source_phone') }}" placeholder="Optional">
+                </div>
+                <div class="field">
+                  <label>Email</label>
+                  <input class="input" type="email" name="source_email" value="{{ old('source_email') }}" placeholder="Optional">
+                </div>
+              </div>
+            </div>
+          </details>
+
+          @error('source_phone')<p class="text-muted" style="font-size:12px;margin:0 0 10px;color:var(--color-accent)">{{ $message }}</p>@enderror
+          @error('source_email')<p class="text-muted" style="font-size:12px;margin:0 0 10px;color:var(--color-accent)">{{ $message }}</p>@enderror
+          @error('unit_amount')<p class="text-muted" style="font-size:12px;margin:0 0 10px;color:var(--color-accent)">{{ $message }}</p>@enderror
+
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+            {{ $donation->isSplit() ? 'Update split' : 'Split into units' }}
+          </button>
+        </form>
+
+        @if ($donation->isSplit() && $donation->unitsClaimed() === 0)
+          <form method="POST" action="{{ route('console.donations.unsplit', $donation) }}" style="margin-top:8px">
+            @csrf
+            <button type="submit" class="btn btn-secondary" style="width:100%;justify-content:center;border-color:var(--color-divider)">Undo split</button>
+          </form>
+        @endif
+      </div>
+    @endif
+
     <div class="panel">
       <h5 style="margin:0 0 16px">Lifecycle</h5>
       @foreach ($stepNames as $i => $step)

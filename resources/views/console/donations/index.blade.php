@@ -12,7 +12,7 @@
 
 <div class="panel-table">
   <table class="table">
-    <thead><tr><th>ID</th><th>Food</th><th>Donor</th><th>Category</th><th>Quantity</th><th>District</th><th>Submitted</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Food</th><th>Donor</th><th>Category</th><th>Quantity</th><th>Units</th><th>District</th><th>Submitted</th><th>Status</th><th></th></tr></thead>
     <tbody>
       @forelse ($donations as $d)
         <tr onclick="window.location='{{ route('console.donations.show', $d) }}'" style="cursor:pointer">
@@ -21,13 +21,16 @@
           <td>{{ $d->donor?->name }}</td>
           <td>{{ $d->category?->name }}</td>
           <td>{{ $d->quantity }}</td>
+          <td style="color:var(--color-neutral-600)">
+            @if ($d->isSplit()) {{ $d->units_available }} of {{ $d->units_total }} × {{ $d->unit_quantity }} @else Whole @endif
+          </td>
           <td style="color:var(--color-neutral-600)">{{ $d->pickup_address }}</td>
           <td style="color:var(--color-neutral-600)">{{ $d->created_at->diffForHumans() }}</td>
           <td><span class="tag {{ \App\Support\ConsoleUi::tagClass($d->status->value) }}">{{ $d->status->getLabel() }}</span></td>
           <td style="text-align:right;color:var(--color-neutral-500)">@include('console.partials.icon', ['name' => 'chevron'])</td>
         </tr>
       @empty
-        <tr><td colspan="9" class="text-muted">No donations found</td></tr>
+        <tr><td colspan="10" class="text-muted">No donations found</td></tr>
       @endforelse
     </tbody>
   </table>

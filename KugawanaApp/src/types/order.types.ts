@@ -17,6 +17,8 @@ export interface Order {
   id: number
   status: OrderStatus
   points_spent: number
+  /** How many portions of a split donation this request covers. */
+  units: number
   delivery_method: 'pickup' | 'delivery'
   delivery_address: string | null
   preferred_quantity: string | null

@@ -36,11 +36,17 @@ export const ordersService = {
     return data.data
   },
 
-  async placeOrder(foodId: number, deliveryMethod: 'pickup' | 'delivery', deliveryAddress?: string): Promise<Order> {
+  async placeOrder(
+    foodId: number,
+    deliveryMethod: 'pickup' | 'delivery',
+    deliveryAddress?: string,
+    units = 1,
+  ): Promise<Order> {
     const { data } = await api.post('/orders', {
       food_donation_id: foodId,
       delivery_method: deliveryMethod,
       delivery_address: deliveryAddress,
+      units,
     })
     return data.data
   },

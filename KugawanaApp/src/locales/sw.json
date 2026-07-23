@@ -95,7 +95,14 @@
     "expiry": "Kitumike kabla ya",
     "donor": "Kimeshirikiwa na",
     "requested": "Ombi limetumwa. Fuatilia kwenye maombi yako.",
-    "notEnoughPoints": "Huna pointi za kutosha. Jaza pochi yako."
+    "notEnoughPoints": "Huna pointi za kutosha. Jaza pochi yako.",
+    "perUnit": "{{size}} kwa kipimo",
+    "pointsPerUnit": "Pointi {{points}} kwa kipimo",
+    "unitsLeft": "Vipimo {{available}} kati ya {{total}} vimebaki",
+    "howMuch": "Unahitaji kiasi gani",
+    "moreUnits": "Ongeza kipimo kimoja",
+    "fewerUnits": "Punguza kipimo kimoja",
+    "youReceive": "Utapata {{amount}} {{unit}} kwa pointi {{points}}"
   },
   "share": {
     "title": "Shiriki chakula",
@@ -285,6 +292,8 @@
   "sharedFood": {
     "title": "Chakula Nilichoshiriki",
     "sharedAgo": "Kilishirikiwa {{time}}",
+    "splitInto": "Kimegawanywa",
+    "unitsShared": "{{total}} × {{size}} · {{claimed}} vimechukuliwa",
     "active": "Inapatikana",
     "foodDetails": "Maelezo ya Chakula",
     "availableUntil": "Kinapatikana Hadi",
