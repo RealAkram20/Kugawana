@@ -104,6 +104,25 @@
     "fewerUnits": "One less unit",
     "youReceive": "You receive {{amount}} {{unit}} for {{points}} points"
   },
+  "cart": {
+    "title": "Basket",
+    "empty": "Your basket is empty.",
+    "added": "{{title}} added to your basket.",
+    "addToBasket": "Add to basket",
+    "perUnitPoints": "{{size}} · {{points}} points per unit",
+    "wholeItem": "Whole item",
+    "total": "Total",
+    "checkout": "Checkout",
+    "addressPlaceholder": "Where should it be delivered?",
+    "addressRequired": "Please enter a delivery address.",
+    "checkoutFailed": "Checkout did not go through. Please try again.",
+    "placedCount": "Requests placed: {{count}}",
+    "nonePlaced": "Nothing could be requested right now.",
+    "reasonReduced": "{{title}}: only {{placed}} of {{requested}} were left, so {{placed}} were added.",
+    "reasonSoldOut": "{{title}} just sold out and stayed in your basket.",
+    "reasonUnavailable": "{{title}} is no longer available and stayed in your basket.",
+    "reasonPoints": "{{title}} needs more points than you have and stayed in your basket."
+  },
   "share": {
     "title": "Share food",
     "foodTitle": "What are you sharing",

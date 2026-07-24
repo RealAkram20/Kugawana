@@ -104,6 +104,25 @@
     "fewerUnits": "Punguza kipimo kimoja",
     "youReceive": "Utapata {{amount}} {{unit}} kwa pointi {{points}}"
   },
+  "cart": {
+    "title": "Kikapu",
+    "empty": "Kikapu chako hakina kitu.",
+    "added": "{{title}} kimewekwa kwenye kikapu.",
+    "addToBasket": "Weka kwenye kikapu",
+    "perUnitPoints": "{{size}} · pointi {{points}} kwa kipimo",
+    "wholeItem": "Kizima",
+    "total": "Jumla",
+    "checkout": "Kamilisha",
+    "addressPlaceholder": "Iletwe wapi?",
+    "addressRequired": "Tafadhali weka anwani ya kuletewa.",
+    "checkoutFailed": "Haikukamilika. Tafadhali jaribu tena.",
+    "placedCount": "Maombi yaliyowekwa: {{count}}",
+    "nonePlaced": "Hakuna kilichoweza kuombwa sasa.",
+    "reasonReduced": "{{title}}: vilibaki {{placed}} kati ya {{requested}}, hivyo {{placed}} vimewekwa.",
+    "reasonSoldOut": "{{title}} kimeisha na kimebaki kwenye kikapu.",
+    "reasonUnavailable": "{{title}} hakipatikani tena na kimebaki kwenye kikapu.",
+    "reasonPoints": "{{title}} kinahitaji pointi zaidi ya ulizonazo na kimebaki kwenye kikapu."
+  },
   "share": {
     "title": "Shiriki chakula",
     "foodTitle": "Unashiriki nini",

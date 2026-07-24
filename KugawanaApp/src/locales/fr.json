@@ -104,6 +104,25 @@
     "fewerUnits": "Une portion de moins",
     "youReceive": "Vous recevez {{amount}} {{unit}} pour {{points}} points"
   },
+  "cart": {
+    "title": "Panier",
+    "empty": "Votre panier est vide.",
+    "added": "{{title}} ajouté à votre panier.",
+    "addToBasket": "Ajouter au panier",
+    "perUnitPoints": "{{size}} · {{points}} points par portion",
+    "wholeItem": "Article entier",
+    "total": "Total",
+    "checkout": "Valider",
+    "addressPlaceholder": "Où doit il être livré ?",
+    "addressRequired": "Veuillez saisir une adresse de livraison.",
+    "checkoutFailed": "La validation a échoué. Veuillez réessayer.",
+    "placedCount": "Demandes placées : {{count}}",
+    "nonePlaced": "Rien n'a pu être demandé pour le moment.",
+    "reasonReduced": "{{title}} : il n'en restait que {{placed}} sur {{requested}}, donc {{placed}} ajoutées.",
+    "reasonSoldOut": "{{title}} vient d'être épuisé et reste dans votre panier.",
+    "reasonUnavailable": "{{title}} n'est plus disponible et reste dans votre panier.",
+    "reasonPoints": "{{title}} demande plus de points que vous n'en avez et reste dans votre panier."
+  },
   "share": {
     "title": "Partager la nourriture",
     "foodTitle": "Que partagez vous",

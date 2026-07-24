@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\FoodDonation;
 use App\Models\Order;
+use App\Models\User;
 use App\Notifications\KugawanaNotification;
 use App\Services\FoodSplitService;
 use App\Services\WalletService;
@@ -193,7 +194,7 @@ class OrderController extends Controller
 
         $food = FoodDonation::findOrFail($data['food_donation_id']);
 
-        if ($food->status !== FoodStatus::Published || $food->expiry_date->isPast()) {
+        if (! $this->isClaimable($food)) {
             return response()->json([
                 'success' => false,
                 'message' => 'This food is no longer available',
@@ -213,28 +214,8 @@ class OrderController extends Controller
             ], 422);
         }
 
-        $points = $food->points_required * $units;
-
         try {
-            $order = DB::transaction(function () use ($request, $wallet, $splitter, $food, $data, $units, $points) {
-                $splitter->claim($food, $units);
-
-                $wallet->deduct($request->user(), $points, 'order', 'food ' . $food->id);
-
-                if ($splitter->shouldReserve($food)) {
-                    $food->update(['status' => FoodStatus::Reserved]);
-                }
-
-                return Order::create([
-                    'receiver_id' => $request->user()->id,
-                    'food_donation_id' => $food->id,
-                    'points_spent' => $points,
-                    'units' => $units,
-                    'delivery_method' => $data['delivery_method'],
-                    'delivery_address' => $data['delivery_address'] ?? null,
-                    'status' => OrderStatus::Pending,
-                ]);
-            });
+            $order = $this->placeLine($request->user(), $food, $units, $data['delivery_method'], $data['delivery_address'] ?? null, $wallet, $splitter);
         } catch (InsufficientPointsException) {
             return response()->json([
                 'success' => false,
@@ -247,20 +228,140 @@ class OrderController extends Controller
             ], 422);
         }
 
-        $order->load('foodDonation.category');
-
-        $this->notifyDonor(
-            $order,
-            'order.requested',
-            'New request for your food',
-            "{$request->user()->name} requested \"{$food->title}\"."
-        );
+        $this->announce($order, $request->user());
 
         return response()->json([
             'success' => true,
             'data' => new OrderResource($order),
             'message' => 'Request placed',
         ], 201);
+    }
+
+    /**
+     * Checks out a whole basket at once. Each line is placed on its own, so a
+     * sold out or unaffordable item never blocks the rest: it is skipped and
+     * reported while everything else goes through. A split line short on stock
+     * is filled with whatever is left rather than refused outright.
+     */
+    public function checkout(Request $request, WalletService $wallet, FoodSplitService $splitter): JsonResponse
+    {
+        $data = $request->validate([
+            'delivery_method' => ['required', 'in:pickup,delivery'],
+            'delivery_address' => ['nullable', 'string', 'max:255'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.food_donation_id' => ['required', 'exists:food_donations,id'],
+            'items.*.units' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $placed = [];
+        $skipped = [];
+        $adjusted = [];
+
+        foreach ($data['items'] as $line) {
+            $food = FoodDonation::find($line['food_donation_id']);
+
+            if (! $food || ! $this->isClaimable($food)) {
+                $skipped[] = $this->lineNote($line['food_donation_id'], $food?->title, 'unavailable');
+                continue;
+            }
+
+            $requested = $food->isSplit() ? max(1, (int) ($line['units'] ?? 1)) : 1;
+            $units = $food->isSplit() ? min($requested, (int) $food->units_available) : 1;
+
+            if ($units < 1) {
+                $skipped[] = $this->lineNote($food->id, $food->title, 'sold_out');
+                continue;
+            }
+
+            try {
+                $order = $this->placeLine($request->user(), $food, $units, $data['delivery_method'], $data['delivery_address'] ?? null, $wallet, $splitter);
+            } catch (InsufficientPointsException) {
+                $skipped[] = $this->lineNote($food->id, $food->title, 'insufficient_points');
+                continue;
+            } catch (OutOfStockException) {
+                $skipped[] = $this->lineNote($food->id, $food->title, 'sold_out');
+                continue;
+            }
+
+            $this->announce($order, $request->user());
+            $placed[] = $order;
+
+            // We gave them fewer units than they asked for, so tell them.
+            if ($units < $requested) {
+                $adjusted[] = $this->lineNote($food->id, $food->title, 'reduced') + [
+                    'requested' => $requested,
+                    'placed' => $units,
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => count($placed) > 0,
+            'data' => [
+                'placed' => OrderResource::collection($placed),
+                'skipped' => $skipped,
+                'adjusted' => $adjusted,
+            ],
+            'message' => count($placed) > 0 ? 'Requests placed' : 'Nothing could be requested',
+        ], count($placed) > 0 ? 201 : 422);
+    }
+
+    private function isClaimable(FoodDonation $food): bool
+    {
+        return $food->status === FoodStatus::Published && ! $food->expiry_date->isPast();
+    }
+
+    /** @return array{food_donation_id:int, title:?string, reason:string} */
+    private function lineNote(int $foodId, ?string $title, string $reason): array
+    {
+        return ['food_donation_id' => $foodId, 'title' => $title, 'reason' => $reason];
+    }
+
+    /**
+     * The atomic core of a request: take the stock, charge the wallet, reserve
+     * the listing if it is now empty and record the order. Throws so the caller
+     * decides how to report a failure. `$units` is assumed already clamped to
+     * what is on the shelf.
+     *
+     * @throws InsufficientPointsException
+     * @throws OutOfStockException
+     */
+    private function placeLine(User $receiver, FoodDonation $food, int $units, string $method, ?string $address, WalletService $wallet, FoodSplitService $splitter): Order
+    {
+        $points = $food->points_required * $units;
+
+        return DB::transaction(function () use ($receiver, $food, $units, $points, $method, $address, $wallet, $splitter) {
+            $splitter->claim($food, $units);
+
+            $wallet->deduct($receiver, $points, 'order', 'food ' . $food->id);
+
+            if ($splitter->shouldReserve($food)) {
+                $food->update(['status' => FoodStatus::Reserved]);
+            }
+
+            return Order::create([
+                'receiver_id' => $receiver->id,
+                'food_donation_id' => $food->id,
+                'points_spent' => $points,
+                'units' => $units,
+                'delivery_method' => $method,
+                'delivery_address' => $address,
+                'status' => OrderStatus::Pending,
+            ]);
+        });
+    }
+
+    /** Loads what the response needs and pings the donor about the new request. */
+    private function announce(Order $order, User $receiver): void
+    {
+        $order->load('foodDonation.category');
+
+        $this->notifyDonor(
+            $order,
+            'order.requested',
+            'New request for your food',
+            "{$receiver->name} requested \"{$order->foodDonation?->title}\"."
+        );
     }
 
     /**

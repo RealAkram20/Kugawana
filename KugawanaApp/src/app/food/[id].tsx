@@ -4,6 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { CartButton } from '../../components/CartButton'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -12,6 +13,7 @@ import { spacing } from '../../constants/spacing'
 import { foodService } from '../../services/food.service'
 import { ordersService } from '../../services/orders.service'
 import { useAuthStore } from '../../stores/auth.store'
+import { useCartStore } from '../../stores/cart.store'
 
 export default function FoodDetailScreen() {
   const { t } = useTranslation()
@@ -19,6 +21,7 @@ export default function FoodDetailScreen() {
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
+  const addToCart = useCartStore((state) => state.add)
   const [method, setMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [units, setUnits] = useState(1)
 
@@ -54,9 +57,26 @@ export default function FoodDetailScreen() {
 
   if (!food) return <View style={styles.container} />
 
+  const addBasket = () => {
+    addToCart({
+      foodId: food.id,
+      title: food.title,
+      image: food.images[0] ?? null,
+      isSplit: food.is_split,
+      unitLabel: food.is_split ? food.unit_quantity ?? food.quantity : food.quantity,
+      unitPoints: food.points_required,
+      maxUnits: maxUnits,
+      units: claimed,
+      donorName: food.donor_name,
+    })
+    Alert.alert(t('common.appName'), t('cart.added', { title: food.title }))
+  }
+
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('food.detail') }} />
+      <Stack.Screen
+        options={{ headerShown: true, title: t('food.detail'), headerRight: () => <CartButton /> }}
+      />
       <ScrollView contentContainerStyle={styles.content}>
         {food.images.length > 0 ? (
           <Image source={{ uri: food.images[0] }} style={styles.image} contentFit="cover" />
@@ -158,7 +178,10 @@ export default function FoodDetailScreen() {
           </Card>
         ) : null}
 
-        <Button label={t('food.request')} onPress={() => request.mutate()} loading={request.isPending} />
+        <View style={styles.actions}>
+          <Button label={t('cart.addToBasket')} variant="secondary" onPress={addBasket} />
+          <Button label={t('food.request')} onPress={() => request.mutate()} loading={request.isPending} />
+        </View>
       </ScrollView>
     </View>
   )
@@ -273,6 +296,9 @@ const styles = StyleSheet.create({
   unitTotal: {
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  actions: {
+    gap: spacing.sm,
   },
   infoCard: {
     marginBottom: spacing.lg,
