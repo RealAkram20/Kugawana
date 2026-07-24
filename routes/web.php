@@ -10,6 +10,7 @@ use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\DonationController;
 use App\Http\Controllers\Console\LearnController;
 use App\Http\Controllers\Console\OrderController;
+use App\Http\Controllers\Console\PackageController;
 use App\Http\Controllers\Console\ReportController;
 use App\Http\Controllers\Console\SettingsController;
 use App\Http\Controllers\Console\UserController;
@@ -52,6 +53,11 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
 
         Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+        Route::post('/wallet/packages', [PackageController::class, 'store'])->name('wallet.packages.store');
+        Route::get('/wallet/packages/{package}/edit', [PackageController::class, 'edit'])->name('wallet.packages.edit');
+        Route::post('/wallet/packages/{package}', [PackageController::class, 'update'])->name('wallet.packages.update');
+        Route::post('/wallet/packages/{package}/toggle', [PackageController::class, 'toggle'])->name('wallet.packages.toggle');
+        Route::post('/wallet/packages/{package}/delete', [PackageController::class, 'destroy'])->name('wallet.packages.destroy');
         Route::post('/wallet/{topup}/approve', [WalletController::class, 'approve'])->name('wallet.approve');
         Route::post('/wallet/{topup}/reject', [WalletController::class, 'reject'])->name('wallet.reject');
 

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Console;
 
 use App\Enums\TopupStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
+use App\Models\Country;
 use App\Models\PointPackage;
 use App\Models\WalletTopup;
 use App\Services\WalletService;
@@ -23,12 +25,23 @@ class WalletController extends Controller
             ->latest()
             ->paginate(25);
 
-        $packages = PointPackage::where('is_active', true)->orderBy('points')->get();
+        $isSuper = auth()->user()->role === UserRole::SuperAdmin;
+
+        // The management view shows inactive bundles too, within the admin's
+        // scope: their own country's bundles plus the global ones.
+        $packages = PointPackage::query()
+            ->when($this->countryId(), fn ($q) => $q->where(fn ($sub) => $sub
+                ->whereNull('country_id')
+                ->orWhere('country_id', $this->countryId())))
+            ->orderBy('points')
+            ->get();
 
         return view('console.wallet.index', [
             'title' => 'Points',
             'requests' => $requests,
             'packages' => $packages,
+            'countries' => $isSuper ? Country::orderBy('name')->get(['id', 'name']) : collect(),
+            'isSuper' => $isSuper,
         ]);
     }
 
