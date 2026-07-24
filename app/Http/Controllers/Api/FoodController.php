@@ -71,6 +71,10 @@ class FoodController extends Controller
     {
         $this->authorizeOwner($request, $food);
 
+        if (! $food->donorCanManage()) {
+            return $this->handedOver();
+        }
+
         $data = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -106,12 +110,8 @@ class FoodController extends Controller
     {
         $this->authorizeOwner($request, $food);
 
-        if (in_array($food->status, [FoodStatus::Completed, FoodStatus::Rejected, FoodStatus::Expired], true)) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'This donation can no longer be completed.',
-            ], 422);
+        if (! $food->donorCanManage()) {
+            return $this->handedOver();
         }
 
         $food->update(['status' => FoodStatus::Completed]);
@@ -156,6 +156,19 @@ class FoodController extends Controller
     private function authorizeOwner(Request $request, FoodDonation $food): void
     {
         abort_unless($request->user()?->id === $food->donor_id, 403, 'This donation is not yours.');
+    }
+
+    /**
+     * The app hides these actions on an approved listing, but a stale screen or
+     * a direct call can still reach them, so the refusal lives here too.
+     */
+    private function handedOver(): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'This food has been taken in by the Kugawana team and can no longer be changed here.',
+        ], 422);
     }
 
     /**

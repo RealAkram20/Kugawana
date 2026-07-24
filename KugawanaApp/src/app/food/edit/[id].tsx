@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
+import { Lock } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -93,10 +93,21 @@ export default function EditDonationScreen() {
     )
   }
 
+  // Reachable from a deep link or a screen opened before the admin approved it.
+  if (!food.can_edit) {
+    return (
+      <View style={styles.locked}>
+        <Stack.Screen options={{ headerShown: true, title: t('sharedFood.edit'), headerRight: () => <CartButton /> }} />
+        <Lock size={32} color={colors.textMuted} strokeWidth={2} />
+        <Text style={styles.lockedText}>{t('sharedFood.handedOver')}</Text>
+      </View>
+    )
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: t('sharedFood.edit'), headerRight: () => <CartButton /> }} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('share.foodTitle')}</Text>
           <TextInput style={styles.input} value={title} onChangeText={setTitle} />
@@ -169,6 +180,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
+  },
+  locked: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+  },
+  lockedText: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    color: colors.textSecondary,
   },
   content: {
     padding: spacing.md,

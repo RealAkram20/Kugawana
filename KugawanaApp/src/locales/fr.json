@@ -254,7 +254,11 @@
       "request": "Demandes",
       "offer": "Offres",
       "discussion": "Discussion"
-    }
+    },
+    "replyingTo": "Réponse à {{name}}",
+    "viewReplies_one": "Voir 1 réponse",
+    "viewReplies_other": "Voir {{count}} réponses",
+    "hideReplies": "Masquer les réponses"
   },
   "createPost": {
     "title": "Créer une publication",
@@ -278,7 +282,8 @@
     "offering": "Propose",
     "titleRequired": "Veuillez d'abord remplir le titre.",
     "posted": "Votre publication a été partagée.",
-    "postFailed": "Impossible de publier pour le moment. Réessayez."
+    "postFailed": "Impossible de publier pour le moment. Réessayez.",
+    "photos": "Photos (facultatif)"
   },
   "communitySettings": {
     "title": "Paramètres de la communauté",
@@ -330,6 +335,7 @@
     "completeConfirm": "Cela ferme l'annonce, plus personne ne pourra la demander. Continuer ?",
     "completed": "Marqué comme terminé. Merci d'avoir partagé !",
     "completeFailed": "Impossible de marquer comme terminé. Veuillez réessayer.",
+    "handedOver": "L'équipe Kugawana a pris en charge cet aliment et le gère désormais. Contactez-nous si quelque chose doit être modifié.",
     "today": "Aujourd'hui, {{time}}",
     "tomorrow": "Demain, {{time}}",
     "status": {

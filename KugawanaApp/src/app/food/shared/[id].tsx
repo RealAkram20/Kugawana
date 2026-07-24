@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft, ChevronRight, Clock, MapPin } from 'lucide-react-native'
+import { ArrowLeft, ChevronRight, Clock, Lock, MapPin } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -180,28 +180,44 @@ export default function SharedFoodDetailScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
-        <Pressable
-          style={({ pressed }) => [styles.action, styles.editBtn, pressed && styles.pressed]}
-          onPress={() => router.push({ pathname: '/food/edit/[id]', params: { id: foodId } })}
-        >
-          <Text style={styles.editLabel} numberOfLines={1}>{t('sharedFood.edit')}</Text>
-        </Pressable>
-        <Pressable
-          disabled={!food.can_complete || complete.isPending}
-          style={({ pressed }) => [
-            styles.action,
-            styles.completeBtn,
-            pressed && styles.pressed,
-            !food.can_complete && styles.actionDisabled,
-          ]}
-          onPress={confirmComplete}
-        >
-          {complete.isPending ? (
-            <ActivityIndicator color={colors.surface} />
-          ) : (
-            <Text style={styles.completeLabel} numberOfLines={2}>{t('sharedFood.markCompleted')}</Text>
-          )}
-        </Pressable>
+        {/* Approval hands the food to the team, so say why the buttons went dead. */}
+        {!food.can_edit && !food.can_complete ? (
+          <View style={styles.handedOver}>
+            <Lock size={18} color={colors.textSecondary} strokeWidth={2} />
+            <Text style={styles.handedOverText}>{t('sharedFood.handedOver')}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.footerActions}>
+          <Pressable
+            disabled={!food.can_edit}
+            style={({ pressed }) => [
+              styles.action,
+              styles.editBtn,
+              pressed && styles.pressed,
+              !food.can_edit && styles.actionDisabled,
+            ]}
+            onPress={() => router.push({ pathname: '/food/edit/[id]', params: { id: foodId } })}
+          >
+            <Text style={styles.editLabel} numberOfLines={1}>{t('sharedFood.edit')}</Text>
+          </Pressable>
+          <Pressable
+            disabled={!food.can_complete || complete.isPending}
+            style={({ pressed }) => [
+              styles.action,
+              styles.completeBtn,
+              pressed && styles.pressed,
+              !food.can_complete && styles.actionDisabled,
+            ]}
+            onPress={confirmComplete}
+          >
+            {complete.isPending ? (
+              <ActivityIndicator color={colors.surface} />
+            ) : (
+              <Text style={styles.completeLabel} numberOfLines={2}>{t('sharedFood.markCompleted')}</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   )
@@ -388,7 +404,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   footer: {
-    flexDirection: 'row',
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
@@ -396,6 +411,21 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
+  },
+  footerActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  handedOver: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  handedOverText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
   },
   action: {
     flex: 1,

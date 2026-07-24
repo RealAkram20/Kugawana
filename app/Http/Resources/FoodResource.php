@@ -51,11 +51,11 @@ class FoodResource extends JsonResource
                 && $this->expiry_date?->isFuture()
                 && ! $this->isSoldOut(),
             'is_owner' => $isOwner,
-            'can_complete' => $isOwner && ! in_array($this->status, [
-                FoodStatus::Completed,
-                FoodStatus::Rejected,
-                FoodStatus::Expired,
-            ], true),
+            // Both stop at approval: once the team has taken the food in, it is
+            // theirs to manage. Kept as two flags so the app can label each
+            // button, and so they can diverge later without an API change.
+            'can_edit' => $isOwner && $this->donorCanManage(),
+            'can_complete' => $isOwner && $this->donorCanManage(),
             'time_ago' => $this->created_at?->diffForHumans(short: true),
             'created_at' => $this->created_at?->toIso8601String(),
 

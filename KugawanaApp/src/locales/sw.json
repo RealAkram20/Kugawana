@@ -254,7 +254,11 @@
       "request": "Maombi",
       "offer": "Matoleo",
       "discussion": "Majadiliano"
-    }
+    },
+    "replyingTo": "Unamjibu {{name}}",
+    "viewReplies_one": "Ona jibu 1",
+    "viewReplies_other": "Ona majibu {{count}}",
+    "hideReplies": "Ficha majibu"
   },
   "createPost": {
     "title": "Unda Chapisho",
@@ -278,7 +282,8 @@
     "offering": "Ninatoa",
     "titleRequired": "Tafadhali jaza kichwa kwanza.",
     "posted": "Chapisho lako limeshirikiwa.",
-    "postFailed": "Imeshindwa kuchapisha sasa. Jaribu tena."
+    "postFailed": "Imeshindwa kuchapisha sasa. Jaribu tena.",
+    "photos": "Picha (si lazima)"
   },
   "communitySettings": {
     "title": "Mipangilio ya Jamii",
@@ -330,6 +335,7 @@
     "completeConfirm": "Hii itafunga tangazo na hakuna atakayeweza kuomba. Endelea?",
     "completed": "Imewekwa kama imekamilika. Asante kwa kushiriki!",
     "completeFailed": "Imeshindwa kuweka kama imekamilika. Tafadhali jaribu tena.",
+    "handedOver": "Timu ya Kugawana imepokea chakula hiki na sasa ndiyo inakisimamia. Wasiliana nasi kama kuna kinachohitaji kubadilishwa.",
     "today": "Leo, {{time}}",
     "tomorrow": "Kesho, {{time}}",
     "status": {

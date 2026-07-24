@@ -254,7 +254,11 @@
       "request": "Requests",
       "offer": "Offers",
       "discussion": "Discussion"
-    }
+    },
+    "replyingTo": "Replying to {{name}}",
+    "viewReplies_one": "View 1 reply",
+    "viewReplies_other": "View {{count}} replies",
+    "hideReplies": "Hide replies"
   },
   "createPost": {
     "title": "Create Post",
@@ -278,7 +282,8 @@
     "offering": "Offering",
     "titleRequired": "Please fill in the title first.",
     "posted": "Your post has been shared.",
-    "postFailed": "Could not post right now. Please try again."
+    "postFailed": "Could not post right now. Please try again.",
+    "photos": "Photos (optional)"
   },
   "communitySettings": {
     "title": "Community Settings",
@@ -330,6 +335,7 @@
     "completeConfirm": "This closes the listing so no one else can request it. Continue?",
     "completed": "Marked as completed. Thank you for sharing!",
     "completeFailed": "Could not mark this as completed. Please try again.",
+    "handedOver": "The Kugawana team has taken this food in and now manages it. Contact us if something needs changing.",
     "today": "Today, {{time}}",
     "tomorrow": "Tomorrow, {{time}}",
     "status": {

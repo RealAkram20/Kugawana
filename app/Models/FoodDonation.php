@@ -106,6 +106,17 @@ class FoodDonation extends Model
         return $this->units_total !== null && $this->unit_amount !== null;
     }
 
+    /**
+     * Whether the donor still owns this listing. Approval is the handover: from
+     * then on the food is physically with the warehouse, an admin may have split
+     * it into units and receivers may have paid points for them, so a donor
+     * editing the quantity or closing the listing would contradict real stock.
+     */
+    public function donorCanManage(): bool
+    {
+        return in_array($this->status, [FoodStatus::Pending, FoodStatus::Reviewed], true);
+    }
+
     public function unitsClaimed(): int
     {
         return $this->isSplit() ? $this->units_total - $this->units_available : 0;

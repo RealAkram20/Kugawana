@@ -55,6 +55,8 @@ export interface FoodListing {
   status: string
   is_active: boolean
   is_owner: boolean
+  /** Both go false once an admin approves the food and takes it into the system. */
+  can_edit: boolean
   can_complete: boolean
   time_ago: string
   created_at: string
