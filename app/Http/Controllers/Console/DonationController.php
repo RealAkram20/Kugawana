@@ -84,8 +84,6 @@ class DonationController extends Controller
             'current' => $current,
             'warehouses' => $warehouses,
             'sources' => $this->sources($donation),
-            'categories' => FoodCategory::where('is_active', true)->orderBy('name')->get(),
-            'units' => Unit::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
         ]);
     }
 
@@ -93,9 +91,31 @@ class DonationController extends Controller
     private const MAX_IMAGES = 5;
 
     /**
-     * Lets the admin tidy a submission before it goes public: fix the photos,
-     * correct the quantity a donor guessed at, or set the right unit. The food
-     * stays credited to the donor; only its presentation changes.
+     * The full editor. Anyone can mislabel, misjudge a quantity or upload a
+     * blurry photo, so the admin needs to fix every field a donor filled in
+     * before the listing goes public.
+     */
+    public function edit(FoodDonation $donation): View
+    {
+        $this->guardScope($donation);
+
+        $donation->load(['donor', 'category', 'unit', 'warehouse']);
+
+        return view('console.donations.edit', [
+            'title' => 'Edit food',
+            'donation' => $donation,
+            'categories' => FoodCategory::where('is_active', true)->orderBy('name')->get(),
+            'units' => Unit::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'warehouses' => Warehouse::where('is_active', true)
+                ->when($this->countryId(), fn ($q) => $q->where('country_id', $this->countryId()))
+                ->orderBy('name')
+                ->get(),
+        ]);
+    }
+
+    /**
+     * Saves every field the donor could have got wrong. The food stays credited
+     * to the donor; only its presentation and logistics change.
      */
     public function update(Request $request, FoodDonation $donation): RedirectResponse
     {
@@ -107,10 +127,15 @@ class DonationController extends Controller
             'food_category_id' => ['required', 'exists:food_categories,id'],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:999999'],
             'unit_id' => ['required', Rule::exists('units', 'id')->where('is_active', true)],
+            'preparation_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'expiry_date' => ['required', 'date'],
             'pickup_address' => ['nullable', 'string', 'max:255'],
             'contact_number' => ['nullable', 'string', 'max:30'],
-            'expiry_date' => ['required', 'date'],
             'special_instructions' => ['nullable', 'string'],
+            'warehouse_id' => ['nullable', Rule::exists('warehouses', 'id')],
+            'points_required' => ['required', 'integer', 'min:0'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'remove_images' => ['nullable', 'array'],
             'remove_images.*' => ['string'],
             'images' => ['nullable', 'array'],
@@ -120,7 +145,7 @@ class DonationController extends Controller
         // A split batch already sized its units against the old amount, so
         // changing the whole out from under them would leave the counts wrong.
         if ($donation->isSplit() && (float) $data['amount'] !== (float) $donation->amount) {
-            return back()->with('toast', 'Undo the split before changing the total quantity');
+            return back()->withInput()->with('toast', 'Undo the split before changing the total quantity');
         }
 
         $images = $this->reconcileImages($request, $donation, $data['remove_images'] ?? []);
@@ -131,14 +156,21 @@ class DonationController extends Controller
             'food_category_id' => $data['food_category_id'],
             'amount' => $data['amount'],
             'unit_id' => $data['unit_id'],
+            'preparation_date' => $data['preparation_date'] ?? null,
+            'expiry_date' => $data['expiry_date'],
             'pickup_address' => $data['pickup_address'] ?? null,
             'contact_number' => $data['contact_number'] ?? null,
-            'expiry_date' => $data['expiry_date'],
             'special_instructions' => $data['special_instructions'] ?? null,
+            'warehouse_id' => $data['warehouse_id'] ?? null,
+            'points_required' => $data['points_required'],
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'images' => $images,
         ]);
 
-        return back()->with('toast', "{$donation->title} updated");
+        return redirect()
+            ->route('console.donations.show', $donation)
+            ->with('toast', "{$donation->title} updated");
     }
 
     /**

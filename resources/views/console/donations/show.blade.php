@@ -11,7 +11,6 @@ $canPublish = in_array($donation->status, [FoodStatus::Approved, FoodStatus::Col
 $canSplit = ! in_array($donation->status, [FoodStatus::Rejected, FoodStatus::Expired, FoodStatus::Completed]);
 $canEdit = ! in_array($donation->status, [FoodStatus::Rejected, FoodStatus::Expired, FoodStatus::Completed]);
 $unitSymbol = $donation->unit?->symbol;
-$hasEditErrors = $errors->hasBag('default') && $errors->isNotEmpty();
 @endphp
 
 <a class="btn btn-ghost" href="{{ route('console.donations.index') }}" style="margin-bottom:14px">← Back to donations</a>
@@ -24,113 +23,17 @@ $hasEditErrors = $errors->hasBag('default') && $errors->isNotEmpty();
     </div>
   </div>
   <div style="flex:1"></div>
+  @if ($canEdit)
+    <a class="btn btn-secondary" style="border-color:var(--color-divider)" href="{{ route('console.donations.edit', $donation) }}">
+      @include('console.partials.icon', ['name' => 'donations'])
+      Edit food
+    </a>
+  @endif
   <span class="tag {{ ConsoleUi::tagClass($donation->status->value) }}" style="font-size:13px;padding:6px 14px">{{ $donation->status->getLabel() }}</span>
 </div>
 
 <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px" class="grid-2">
   <div style="display:flex;flex-direction:column;gap:16px">
-    @if ($canEdit)
-      <details class="panel" @if ($hasEditErrors) open @endif>
-        <summary style="cursor:pointer;font-weight:600;display:flex;align-items:center;gap:8px">
-          @include('console.partials.icon', ['name' => 'donations'])
-          Edit food
-          <span class="text-muted" style="font-weight:400;font-size:13px">— fix the photos, quantity or unit before publishing</span>
-        </summary>
-
-        <form method="POST" action="{{ route('console.donations.update', $donation) }}" enctype="multipart/form-data" style="margin-top:16px">
-          @csrf
-
-          <div class="field" style="margin-bottom:12px">
-            <label>Title</label>
-            <input class="input" name="title" value="{{ old('title', $donation->title) }}" required>
-            @error('title')<p class="text-muted" style="font-size:12px;margin:6px 0 0;color:var(--color-accent)">{{ $message }}</p>@enderror
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div class="field">
-              <label>Category</label>
-              <select class="input" name="food_category_id" required>
-                @foreach ($categories as $category)
-                  <option value="{{ $category->id }}" @selected(old('food_category_id', $donation->food_category_id) == $category->id)>{{ $category->name }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div class="field">
-              <label>Best before</label>
-              <input class="input" type="datetime-local" name="expiry_date" value="{{ old('expiry_date', $donation->expiry_date?->format('Y-m-d\TH:i')) }}" required>
-            </div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div class="field">
-              <label>Quantity</label>
-              <input class="input" type="number" name="amount" step="0.01" min="0.01" value="{{ old('amount', rtrim(rtrim(number_format((float) $donation->amount, 2, '.', ''), '0'), '.')) }}" @disabled($donation->isSplit()) required>
-              @if ($donation->isSplit())
-                <p class="text-muted" style="font-size:12px;margin:6px 0 0">Undo the split to change the total.</p>
-              @endif
-            </div>
-            <div class="field">
-              <label>Unit</label>
-              <select class="input" name="unit_id" required>
-                @foreach ($units as $unit)
-                  <option value="{{ $unit->id }}" @selected(old('unit_id', $donation->unit_id) == $unit->id)>{{ $unit->name }} ({{ $unit->symbol }})</option>
-                @endforeach
-              </select>
-            </div>
-          </div>
-          @if ($donation->isSplit())
-            <input type="hidden" name="amount" value="{{ rtrim(rtrim(number_format((float) $donation->amount, 2, '.', ''), '0'), '.') }}">
-          @endif
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div class="field">
-              <label>Pickup address</label>
-              <input class="input" name="pickup_address" value="{{ old('pickup_address', $donation->pickup_address) }}">
-            </div>
-            <div class="field">
-              <label>Contact number</label>
-              <input class="input" name="contact_number" value="{{ old('contact_number', $donation->contact_number) }}">
-            </div>
-          </div>
-
-          <div class="field" style="margin-bottom:12px">
-            <label>Description</label>
-            <textarea class="input" name="description" rows="3">{{ old('description', $donation->description) }}</textarea>
-          </div>
-
-          <div class="field" style="margin-bottom:12px">
-            <label>Special instructions</label>
-            <input class="input" name="special_instructions" value="{{ old('special_instructions', $donation->special_instructions) }}">
-          </div>
-
-          @if (! empty($donation->images))
-            <div class="field" style="margin-bottom:12px">
-              <label>Current photos — tick to remove</label>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
-                @foreach ($donation->images as $path)
-                  <label style="position:relative;cursor:pointer">
-                    <img src="{{ Storage::url($path) }}" style="width:78px;height:78px;object-fit:cover;display:block">
-                    <span style="display:flex;align-items:center;gap:5px;font-size:12px;margin-top:4px">
-                      <input type="checkbox" name="remove_images[]" value="{{ $path }}"> Remove
-                    </span>
-                  </label>
-                @endforeach
-              </div>
-            </div>
-          @endif
-
-          <div class="field" style="margin-bottom:16px">
-            <label>Add photos</label>
-            <input class="input" type="file" name="images[]" accept="image/*" multiple>
-            <p class="text-muted" style="font-size:12px;margin:6px 0 0">Up to 5 in total. The first photo is the listing thumbnail.</p>
-            @error('images.0')<p class="text-muted" style="font-size:12px;margin:6px 0 0;color:var(--color-accent)">{{ $message }}</p>@enderror
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Save changes</button>
-        </form>
-      </details>
-    @endif
-
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" class="grid-3">
       @php $images = collect($donation->images ?? [])->take(3); @endphp
       @foreach (range(0, 2) as $i)
