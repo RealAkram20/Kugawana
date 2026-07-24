@@ -16,6 +16,7 @@ import {
 } from 'react-native'
 import { CategoryPill } from '../../../components/food/CategoryPill'
 import { PhotoPicker } from '../../../components/food/PhotoPicker'
+import { CartButton } from '../../../components/CartButton'
 import { colors } from '../../../constants/colors'
 import { spacing } from '../../../constants/spacing'
 import { foodService } from '../../../services/food.service'
@@ -86,7 +87,7 @@ export default function EditDonationScreen() {
   if (!food) {
     return (
       <View style={styles.loading}>
-        <Stack.Screen options={{ headerShown: true, title: t('sharedFood.edit') }} />
+        <Stack.Screen options={{ headerShown: true, title: t('sharedFood.edit'), headerRight: () => <CartButton /> }} />
         <ActivityIndicator color={colors.primary} />
       </View>
     )
@@ -94,7 +95,7 @@ export default function EditDonationScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('sharedFood.edit') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('sharedFood.edit'), headerRight: () => <CartButton /> }} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('share.foodTitle')}</Text>

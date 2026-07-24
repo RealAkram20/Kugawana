@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import {
-  Bell,
   BookOpen,
   Ellipsis,
   Heart,
@@ -28,7 +27,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { NotificationsSheet } from '../../components/NotificationsSheet'
+import { CartButton } from '../../components/CartButton'
 import { CategoryIcon } from '../../components/ui/CategoryIcon'
 import { PagedSlider } from '../../components/ui/PagedSlider'
 import { colors } from '../../constants/colors'
@@ -38,7 +37,6 @@ import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { communityService } from '../../services/community.service'
 import { foodService } from '../../services/food.service'
 import { learnService } from '../../services/learn.service'
-import { notificationsService } from '../../services/notifications.service'
 import { useAuthStore } from '../../stores/auth.store'
 
 /** How many cards each home carousel carries before "See all" takes over. */
@@ -55,7 +53,6 @@ export default function HomeScreen() {
   const { t } = useTranslation()
   const { width } = useWindowDimensions()
   const user = useAuthStore((state) => state.user)
-  const [bellOpen, setBellOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   usePushNotifications()
@@ -91,14 +88,6 @@ export default function HomeScreen() {
     queryFn: () => learnService.articles(),
   })
 
-  // Drives the bell badge; the sheet reuses the same cache when it opens.
-  const { data: notifications } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => notificationsService.list(),
-  })
-
-  const unreadCount = notifications?.unread_count ?? 0
-
   const firstName = user?.name?.split(' ')[0] ?? ''
   const actionLabels: Record<string, string> = {
     find: t('home.findFood'),
@@ -126,20 +115,7 @@ export default function HomeScreen() {
           <Pressable hitSlop={8}>
             <Menu size={26} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={styles.bellWrap}
-            onPress={() => setBellOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('notifications.title')}
-          >
-            <Bell size={24} color={colors.textPrimary} strokeWidth={2.2} />
-            {unreadCount > 0 ? (
-              <View style={styles.bellBadge}>
-                <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-              </View>
-            ) : null}
-          </Pressable>
+          <CartButton />
         </View>
 
         <Text style={styles.greeting}>
@@ -354,8 +330,6 @@ export default function HomeScreen() {
           <Text style={styles.sectionEmpty}>{t('home.noArticles')}</Text>
         )}
       </ScrollView>
-
-      <NotificationsSheet visible={bellOpen} onClose={() => setBellOpen(false)} />
     </SafeAreaView>
   )
 }
@@ -375,26 +349,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
-  },
-  bellWrap: {
-    padding: 2,
-  },
-  bellBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#E02D2D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  bellBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
   greeting: {
     fontSize: 30,

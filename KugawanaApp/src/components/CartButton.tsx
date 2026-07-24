@@ -1,17 +1,17 @@
-import { router } from 'expo-router'
 import { ShoppingBasket } from 'lucide-react-native'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '../constants/colors'
-import { useCartStore, cartCount } from '../stores/cart.store'
+import { cartCount, useCartStore } from '../stores/cart.store'
 
-/** Header basket button with a live count badge; hidden when the basket is empty. */
+/** Header basket button with a live count badge; opens the slide-in basket popup. */
 export function CartButton() {
   const items = useCartStore((state) => state.items)
+  const openCart = useCartStore((state) => state.openCart)
   const count = cartCount(items)
 
   return (
     <Pressable
-      onPress={() => router.push('/cart')}
+      onPress={openCart}
       style={styles.button}
       hitSlop={8}
       accessibilityLabel="Open basket"

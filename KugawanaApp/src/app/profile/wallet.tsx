@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Card } from '../../components/ui/Card'
+import { CartButton } from '../../components/CartButton'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { walletService } from '../../services/orders.service'
@@ -76,7 +77,7 @@ export default function WalletScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('wallet.title') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('wallet.title'), headerRight: () => <CartButton /> }} />
       <FlatList
         data={wallet?.transactions ?? []}
         keyExtractor={(item) => String(item.id)}

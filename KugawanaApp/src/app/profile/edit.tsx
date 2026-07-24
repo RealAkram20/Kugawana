@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { CartButton } from '../../components/CartButton'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { authService } from '../../services/auth.service'
@@ -58,7 +59,7 @@ export default function EditProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('profile.editProfile') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('profile.editProfile'), headerRight: () => <CartButton /> }} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('editProfile.name')}</Text>

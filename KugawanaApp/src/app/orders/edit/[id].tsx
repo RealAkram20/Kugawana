@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { CartButton } from '../../../components/CartButton'
 import { colors } from '../../../constants/colors'
 import { spacing } from '../../../constants/spacing'
 import { ordersService } from '../../../services/orders.service'
@@ -57,7 +58,7 @@ export default function EditRequestScreen() {
   if (!order) {
     return (
       <View style={styles.loading}>
-        <Stack.Screen options={{ headerShown: true, title: t('requestDetail.editRequest') }} />
+        <Stack.Screen options={{ headerShown: true, title: t('requestDetail.editRequest'), headerRight: () => <CartButton /> }} />
         <ActivityIndicator color={colors.primary} />
       </View>
     )
@@ -65,7 +66,7 @@ export default function EditRequestScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('requestDetail.editRequest') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('requestDetail.editRequest'), headerRight: () => <CartButton /> }} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('requestDetail.preferredQuantity')}</Text>

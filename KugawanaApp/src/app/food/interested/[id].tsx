@@ -3,6 +3,7 @@ import { Image } from 'expo-image'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
+import { CartButton } from '../../../components/CartButton'
 import { colors } from '../../../constants/colors'
 import { spacing } from '../../../constants/spacing'
 import { foodService } from '../../../services/food.service'
@@ -19,7 +20,7 @@ export default function InterestedPeopleScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('sharedFood.peopleInterested') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('sharedFood.peopleInterested'), headerRight: () => <CartButton /> }} />
       <FlatList
         data={people ?? []}
         keyExtractor={(item) => String(item.id)}

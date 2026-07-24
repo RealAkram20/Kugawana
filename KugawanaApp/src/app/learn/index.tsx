@@ -3,6 +3,7 @@ import { router, Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { Card } from '../../components/ui/Card'
+import { CartButton } from '../../components/CartButton'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { learnService } from '../../services/learn.service'
@@ -16,7 +17,7 @@ export default function LearnScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('learn.title') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('learn.title'), headerRight: () => <CartButton /> }} />
       <FlatList
         data={articles ?? []}
         keyExtractor={(item) => String(item.id)}

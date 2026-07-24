@@ -106,6 +106,8 @@
   },
   "cart": {
     "title": "Basket",
+    "yourCart": "Your basket",
+    "itemsCount": "{{count}} items",
     "empty": "Your basket is empty.",
     "added": "{{title}} added to your basket.",
     "addToBasket": "Add to basket",

@@ -3,6 +3,7 @@ import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import {
+  Bell,
   Camera,
   ChevronRight,
   ClipboardList,
@@ -19,18 +20,21 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { NotificationsSheet } from '../../components/NotificationsSheet'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { releasePushToken } from '../../hooks/usePushNotifications'
 import i18n from '../../locales/i18n'
 import { authService } from '../../services/auth.service'
 import { foodService } from '../../services/food.service'
+import { notificationsService } from '../../services/notifications.service'
 import { ordersService } from '../../services/orders.service'
 import { Language, useAppStore } from '../../stores/app.store'
 import { useAuthStore } from '../../stores/auth.store'
 
 const iconColors = {
   edit: colors.primary,
+  notifications: '#2F6FED',
   language: colors.textPrimary,
   shared: colors.primary,
   requests: colors.accent,
@@ -53,6 +57,13 @@ export default function ProfileScreen() {
   const language = useAppStore((state) => state.language)
   const setLanguage = useAppStore((state) => state.setLanguage)
   const [langOpen, setLangOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+
+  const { data: notifications } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationsService.list(),
+  })
+  const unreadCount = notifications?.unread_count ?? 0
 
   const { data: donations } = useQuery({
     queryKey: ['my-donations'],
@@ -134,6 +145,24 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.menu}>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => setNotifOpen(true)}
+          >
+            <Bell size={24} color={iconColors.notifications} strokeWidth={2} />
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>{t('notifications.title')}</Text>
+            </View>
+            {unreadCount > 0 ? (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            ) : null}
+            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={editProfile}
@@ -266,6 +295,8 @@ export default function ProfileScreen() {
           {t('common.appName')} v{Constants.expoConfig?.version ?? '1.0.0'}
         </Text>
       </ScrollView>
+
+      <NotificationsSheet visible={notifOpen} onClose={() => setNotifOpen(false)} />
     </SafeAreaView>
   )
 }
@@ -380,6 +411,20 @@ const styles = StyleSheet.create({
   rowSubAccent: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  notifBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notifBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.surface,
   },
   divider: {
     height: 1,

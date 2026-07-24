@@ -2,6 +2,7 @@ import { Stack } from 'expo-router'
 import { ChevronRight, FileText, Flag, HelpCircle, Mail } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { CartButton } from '../../components/CartButton'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 
@@ -23,7 +24,7 @@ export default function HelpScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('profile.helpTitle') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('profile.helpTitle'), headerRight: () => <CartButton /> }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.intro}>{t('profile.helpIntro')}</Text>
         <View style={styles.card}>

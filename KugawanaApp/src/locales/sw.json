@@ -106,6 +106,8 @@
   },
   "cart": {
     "title": "Kikapu",
+    "yourCart": "Kikapu chako",
+    "itemsCount": "vitu {{count}}",
     "empty": "Kikapu chako hakina kitu.",
     "added": "{{title}} kimewekwa kwenye kikapu.",
     "addToBasket": "Weka kwenye kikapu",

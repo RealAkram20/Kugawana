@@ -106,6 +106,8 @@
   },
   "cart": {
     "title": "Panier",
+    "yourCart": "Votre panier",
+    "itemsCount": "{{count}} articles",
     "empty": "Votre panier est vide.",
     "added": "{{title}} ajouté à votre panier.",
     "addToBasket": "Ajouter au panier",

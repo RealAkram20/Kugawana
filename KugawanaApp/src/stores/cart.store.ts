@@ -5,6 +5,10 @@ import type { CartItem } from '../types/cart.types'
 
 interface CartState {
   items: CartItem[]
+  /** Whether the slide-in basket popup is showing. Never persisted. */
+  open: boolean
+  openCart: () => void
+  closeCart: () => void
   /** Adds a food, or tops up its unit count if it is already in the basket. */
   add: (item: CartItem) => void
   setUnits: (foodId: number, units: number) => void
@@ -23,6 +27,9 @@ export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       items: [],
+      open: false,
+      openCart: () => set({ open: true }),
+      closeCart: () => set({ open: false }),
       add: (item) =>
         set((state) => {
           const existing = state.items.find((line) => line.foodId === item.foodId)
