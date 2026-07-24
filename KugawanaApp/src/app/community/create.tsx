@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import {
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,10 +14,12 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { PhotoPicker } from '../../components/food/PhotoPicker'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { communityService } from '../../services/community.service'
 import type { PostType } from '../../types/community.types'
+import type { PickedImage } from '../../types/food.types'
 
 const LOCATIONS = ['Kampala, Uganda', 'Nairobi, Kenya', 'Mombasa, Kenya', 'Kisumu, Kenya', 'Nakuru, Kenya']
 
@@ -37,6 +38,7 @@ export default function CreatePostScreen() {
   const [quantity, setQuantity] = useState('')
   const [location, setLocation] = useState(LOCATIONS[0])
   const [details, setDetails] = useState('')
+  const [images, setImages] = useState<PickedImage[]>([])
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const labelKey = { request: 'needLabel', offer: 'offerLabel', discussion: 'topicLabel' }[type]
@@ -56,7 +58,7 @@ export default function CreatePostScreen() {
 
   const post = useMutation({
     mutationFn: () =>
-      communityService.post({ content: buildContent(), post_type: type, location }),
+      communityService.post({ content: buildContent(), post_type: type, location, images }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community'] })
       Alert.alert(t('common.appName'), t('createPost.posted'))
@@ -87,7 +89,7 @@ export default function CreatePostScreen() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('createPost.postType')}</Text>
           <View style={styles.typeRow}>
@@ -129,6 +131,9 @@ export default function CreatePostScreen() {
               />
             </>
           )}
+
+          <Text style={styles.label}>{t('createPost.photos')}</Text>
+          <PhotoPicker value={images} onChange={setImages} max={4} />
 
           <Text style={styles.label}>{t('createPost.location')}</Text>
           <Pressable style={styles.locationField} onPress={() => setPickerOpen((open) => !open)}>

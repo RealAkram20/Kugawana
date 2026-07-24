@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/community/{post}', [CommunityController::class, 'show']);
     Route::post('/community/{post}/like', [CommunityController::class, 'like']);
     Route::post('/community/{post}/comment', [CommunityController::class, 'comment']);
+    Route::get('/community/{post}/comments/{comment}/replies', [CommunityController::class, 'replies']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);

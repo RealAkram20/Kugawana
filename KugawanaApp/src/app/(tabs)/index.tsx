@@ -33,6 +33,7 @@ import { PagedSlider } from '../../components/ui/PagedSlider'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useLikePost } from '../../hooks/useLikePost'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { communityService } from '../../services/community.service'
 import { foodService } from '../../services/food.service'
@@ -99,6 +100,8 @@ export default function HomeScreen() {
   // One slide is exactly as wide as the padded content, so paging lands cleanly
   // whatever the device width.
   const slideWidth = width - spacing.md * 2
+
+  const like = useLikePost()
 
   const availableFood = (listings ?? []).slice(0, MAX_CARDS)
   const recentPosts = (posts ?? []).slice(0, MAX_CARDS)
@@ -246,49 +249,63 @@ export default function HomeScreen() {
               slideWidth={slideWidth}
               keyExtractor={(post) => String(post.id)}
               renderItem={(post) => (
-                <Pressable
-                  style={styles.postCard}
-                  onPress={() => router.push({ pathname: '/community/[id]', params: { id: post.id } })}
-                >
-                  <View style={styles.postHeader}>
-                    {post.profile_photo ? (
-                      <Image source={post.profile_photo} style={styles.avatar} contentFit="cover" />
-                    ) : (
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{post.author_name?.slice(0, 1).toUpperCase()}</Text>
+                // The card is a plain View so the like button is a sibling of the
+                // link, not a child of it. Nested Pressables let the outer one
+                // take the touch, which is what stopped the heart working here.
+                <View style={styles.postCard}>
+                  <Pressable
+                    style={styles.postLink}
+                    onPress={() => router.push({ pathname: '/community/[id]', params: { id: post.id } })}
+                  >
+                    <View style={styles.postHeader}>
+                      {post.profile_photo ? (
+                        <Image source={post.profile_photo} style={styles.avatar} contentFit="cover" />
+                      ) : (
+                        <View style={styles.avatar}>
+                          <Text style={styles.avatarText}>{post.author_name?.slice(0, 1).toUpperCase()}</Text>
+                        </View>
+                      )}
+                      <View style={styles.postHeaderText}>
+                        <Text style={styles.postAuthor} numberOfLines={1}>
+                          {post.author_name}
+                        </Text>
+                        <Text style={styles.postMeta}>{post.time_ago}</Text>
                       </View>
-                    )}
-                    <View style={styles.postHeaderText}>
-                      <Text style={styles.postAuthor} numberOfLines={1}>
-                        {post.author_name}
-                      </Text>
-                      <Text style={styles.postMeta}>{post.time_ago}</Text>
+                      <Ellipsis size={20} color={colors.textSecondary} />
                     </View>
-                    <Ellipsis size={20} color={colors.textSecondary} />
-                  </View>
-                  <View style={styles.postBody}>
-                    <Text style={styles.postText} numberOfLines={3}>
-                      {post.content}
-                    </Text>
-                    {post.images?.[0] ? (
-                      <Image source={post.images[0]} style={styles.postThumb} contentFit="cover" transition={150} />
-                    ) : null}
-                  </View>
+                    <View style={styles.postBody}>
+                      <Text style={styles.postText} numberOfLines={3}>
+                        {post.content}
+                      </Text>
+                      {post.images?.[0] ? (
+                        <Image source={post.images[0]} style={styles.postThumb} contentFit="cover" transition={150} />
+                      ) : null}
+                    </View>
+                  </Pressable>
+
                   <View style={styles.postStats}>
-                    <View style={styles.postStat}>
+                    <Pressable
+                      style={styles.postStat}
+                      hitSlop={10}
+                      onPress={() => like.mutate(post.id)}
+                    >
                       <Heart
                         size={20}
                         color={post.liked ? colors.error : colors.textSecondary}
                         fill={post.liked ? colors.error : 'transparent'}
                       />
                       <Text style={styles.postStatText}>{post.likes_count}</Text>
-                    </View>
-                    <View style={styles.postStat}>
+                    </Pressable>
+                    <Pressable
+                      style={styles.postStat}
+                      hitSlop={10}
+                      onPress={() => router.push({ pathname: '/community/[id]', params: { id: post.id } })}
+                    >
                       <MessageCircle size={20} color={colors.textSecondary} />
                       <Text style={styles.postStatText}>{post.comments_count}</Text>
-                    </View>
+                    </Pressable>
                   </View>
-                </Pressable>
+                </View>
               )}
             />
           </View>
@@ -583,6 +600,11 @@ const styles = StyleSheet.create({
   postGroup: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  // Fills the card above the stats row, so tapping anywhere on the card still
+  // opens the post the way it did when the whole card was one button.
+  postLink: {
+    flex: 1,
   },
   postBody: {
     flexDirection: 'row',

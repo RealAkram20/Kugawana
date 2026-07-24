@@ -1,13 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft, Heart, MapPin, MessageCircle, MoreHorizontal, Send } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { ArrowLeft, Heart, MapPin, MessageCircle, MoreHorizontal, Send, X } from 'lucide-react-native'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,56 +15,167 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { CommentThread } from '../../components/community/CommentThread'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
+import { useLikePost } from '../../hooks/useLikePost'
 import { communityService } from '../../services/community.service'
-import type { CommunityComment } from '../../types/community.types'
+import type { CommunityComment, CommunityPostDetail } from '../../types/community.types'
 
 export default function CommunityPostDetailScreen() {
   const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
+  const postId = Number(id)
 
   const { data: post } = useQuery({
     queryKey: ['community-post', id],
     queryFn: () => communityService.detail(id),
   })
 
-  const [liked, setLiked] = useState(false)
-  const [likes, setLikes] = useState(0)
-  const [comments, setComments] = useState<CommunityComment[]>([])
-  const [commentCount, setCommentCount] = useState(0)
+  const like = useLikePost()
+  const client = useQueryClient()
+  const inputRef = useRef<TextInput>(null)
+
+  // Replies are not part of the post payload, so they are the only thing this
+  // screen keeps for itself. Comments and their counts live in the query cache
+  // instead of being copied into state, which keeps them correct across a
+  // refetch and avoids a seeding effect.
+  const [replies, setReplies] = useState<Record<number, CommunityComment[]>>({})
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const [loadingReplies, setLoadingReplies] = useState<number | null>(null)
+  const [replyTo, setReplyTo] = useState<CommunityComment | null>(null)
   const [draft, setDraft] = useState('')
 
-  useEffect(() => {
-    if (!post) return
-    setLiked(post.liked)
-    setLikes(post.likes_count)
-    setComments(post.comments)
-    setCommentCount(post.comments_count)
-  }, [post])
+  const comments = post?.comments ?? []
+  const commentCount = post?.comments_count ?? 0
 
-  const postId = Number(id)
+  const patchPost = (update: (detail: CommunityPostDetail) => CommunityPostDetail) =>
+    client.setQueryData<CommunityPostDetail>(['community-post', id], (detail) =>
+      detail ? update(detail) : detail,
+    )
 
-  const toggleLike = () => {
-    setLiked((prev) => !prev)
-    setLikes((prev) => (liked ? prev - 1 : prev + 1))
-    communityService.like(postId).catch(() => {})
+  /** Pulls a thread's replies once, so later toggles are instant. */
+  const ensureReplies = async (threadId: number): Promise<CommunityComment[]> => {
+    const cached = replies[threadId]
+    if (cached) return cached
+
+    setLoadingReplies(threadId)
+    try {
+      const list = await communityService.replies(postId, threadId)
+      setReplies((prev) => ({ ...prev, [threadId]: list }))
+      return list
+    } catch {
+      return []
+    } finally {
+      setLoadingReplies(null)
+    }
   }
 
-  const send = () => {
+  const toggleReplies = async (comment: CommunityComment) => {
+    if (expanded[comment.id]) {
+      setExpanded((prev) => ({ ...prev, [comment.id]: false }))
+      return
+    }
+
+    await ensureReplies(comment.id)
+    setExpanded((prev) => ({ ...prev, [comment.id]: true }))
+  }
+
+  const startReply = (comment: CommunityComment) => {
+    setReplyTo(comment)
+    // Answering a reply stays in the same thread, so name who it is aimed at.
+    if (comment.parent_id) setDraft(`@${comment.author_name} `)
+    inputRef.current?.focus()
+  }
+
+  const cancelReply = () => {
+    setReplyTo(null)
+    setDraft('')
+  }
+
+  const send = async () => {
     const text = draft.trim()
     if (!text) return
+
+    // The server files a reply-to-a-reply under the same thread starter, so the
+    // screen has to agree on which thread the new row belongs to.
+    const threadId = replyTo ? (replyTo.parent_id ?? replyTo.id) : null
+    const tempId = -Date.now()
+
     const optimistic: CommunityComment = {
-      id: Date.now(),
+      id: tempId,
+      parent_id: threadId,
+      author_id: 0,
       author_name: t('postDetail.you'),
       profile_photo: null,
       content: text,
+      replies_count: 0,
       time_ago: t('postDetail.now'),
     }
-    setComments((prev) => [...prev, optimistic])
-    setCommentCount((prev) => prev + 1)
+
     setDraft('')
-    communityService.comment(postId, text).catch(() => {})
+    setReplyTo(null)
+
+    if (threadId) {
+      // Load what is already there first, or the thread would open showing only
+      // the new reply while the counter claims there are more.
+      const existing = await ensureReplies(threadId)
+      setReplies((prev) => ({ ...prev, [threadId]: [...(prev[threadId] ?? existing), optimistic] }))
+      setExpanded((prev) => ({ ...prev, [threadId]: true }))
+      patchPost((detail) => ({
+        ...detail,
+        comments_count: detail.comments_count + 1,
+        comments: detail.comments.map((item) =>
+          item.id === threadId ? { ...item, replies_count: item.replies_count + 1 } : item,
+        ),
+      }))
+    } else {
+      patchPost((detail) => ({
+        ...detail,
+        comments_count: detail.comments_count + 1,
+        comments: [...detail.comments, optimistic],
+      }))
+    }
+
+    try {
+      const saved = await communityService.comment(postId, text, threadId)
+
+      if (threadId) {
+        setReplies((prev) => ({
+          ...prev,
+          [threadId]: (prev[threadId] ?? []).map((item) => (item.id === tempId ? saved : item)),
+        }))
+      } else {
+        patchPost((detail) => ({
+          ...detail,
+          comments: detail.comments.map((item) => (item.id === tempId ? saved : item)),
+        }))
+      }
+    } catch {
+      // Take the placeholder back out rather than leaving a comment on screen
+      // that no one else will ever see.
+      if (threadId) {
+        setReplies((prev) => ({
+          ...prev,
+          [threadId]: (prev[threadId] ?? []).filter((item) => item.id !== tempId),
+        }))
+        patchPost((detail) => ({
+          ...detail,
+          comments_count: Math.max(0, detail.comments_count - 1),
+          comments: detail.comments.map((item) =>
+            item.id === threadId
+              ? { ...item, replies_count: Math.max(0, item.replies_count - 1) }
+              : item,
+          ),
+        }))
+      } else {
+        patchPost((detail) => ({
+          ...detail,
+          comments_count: Math.max(0, detail.comments_count - 1),
+          comments: detail.comments.filter((item) => item.id !== tempId),
+        }))
+      }
+    }
   }
 
   if (!post) {
@@ -92,7 +202,7 @@ export default function CommunityPostDetailScreen() {
       </View>
       <View style={styles.headerBorder} />
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <View style={styles.postHead}>
             <Pressable
@@ -139,14 +249,14 @@ export default function CommunityPostDetailScreen() {
           )}
 
           <View style={styles.metrics}>
-            <Pressable style={styles.metric} onPress={toggleLike} hitSlop={8}>
+            <Pressable style={styles.metric} onPress={() => like.mutate(post.id)} hitSlop={8}>
               <Heart
                 size={22}
-                color={liked ? colors.error : colors.textSecondary}
-                fill={liked ? colors.error : 'transparent'}
+                color={post.liked ? colors.error : colors.textSecondary}
+                fill={post.liked ? colors.error : 'transparent'}
                 strokeWidth={2}
               />
-              <Text style={styles.metricText}>{likes}</Text>
+              <Text style={styles.metricText}>{post.likes_count}</Text>
             </Pressable>
             <View style={styles.metric}>
               <MessageCircle size={22} color={colors.textPrimary} strokeWidth={2} />
@@ -161,39 +271,51 @@ export default function CommunityPostDetailScreen() {
           </Text>
 
           {comments.map((comment) => (
-            <View key={comment.id} style={styles.commentCard}>
-              <View style={styles.commentHead}>
-                {comment.profile_photo ? (
-                  <Image source={{ uri: comment.profile_photo }} style={styles.commentAvatar} contentFit="cover" />
-                ) : (
-                  <View style={[styles.commentAvatar, styles.commentAvatarFallback]}>
-                    <Text style={styles.commentInitial}>{comment.author_name.slice(0, 1)}</Text>
-                  </View>
-                )}
-                <Text style={styles.commentName}>{comment.author_name}</Text>
-                <Text style={styles.commentTime}>{comment.time_ago}</Text>
-              </View>
-              <Text style={styles.commentBody}>{comment.content}</Text>
-              <Text style={styles.reply}>{t('postDetail.reply')}</Text>
-            </View>
+            <CommentThread
+              key={comment.id}
+              comment={comment}
+              replies={replies[comment.id]}
+              expanded={!!expanded[comment.id]}
+              loading={loadingReplies === comment.id}
+              onToggleReplies={toggleReplies}
+              onReply={startReply}
+            />
           ))}
         </ScrollView>
 
-        <View style={styles.composer}>
-          <TextInput
-            style={styles.composerInput}
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={t('postDetail.writeComment')}
-            placeholderTextColor={colors.textMuted}
-          />
-          <Pressable
-            style={[styles.sendBtn, draft.trim().length > 0 && styles.sendBtnActive]}
-            onPress={send}
-            disabled={draft.trim().length === 0}
-          >
-            <Send size={20} color={draft.trim().length > 0 ? '#FFFFFF' : colors.textSecondary} strokeWidth={2} />
-          </Pressable>
+        <View style={styles.composerWrap}>
+          {replyTo ? (
+            <View style={styles.replyBanner}>
+              <Text style={styles.replyBannerText} numberOfLines={1}>
+                {t('postDetail.replyingTo', { name: replyTo.author_name })}
+              </Text>
+              <Pressable hitSlop={10} onPress={cancelReply}>
+                <X size={18} color={colors.textSecondary} strokeWidth={2} />
+              </Pressable>
+            </View>
+          ) : null}
+
+          <View style={styles.composer}>
+            <TextInput
+              ref={inputRef}
+              style={styles.composerInput}
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={
+                replyTo
+                  ? t('postDetail.replyingTo', { name: replyTo.author_name })
+                  : t('postDetail.writeComment')
+              }
+              placeholderTextColor={colors.textMuted}
+            />
+            <Pressable
+              style={[styles.sendBtn, draft.trim().length > 0 && styles.sendBtnActive]}
+              onPress={send}
+              disabled={draft.trim().length === 0}
+            >
+              <Send size={20} color={draft.trim().length > 0 ? '#FFFFFF' : colors.textSecondary} strokeWidth={2} />
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -322,56 +444,25 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
-  commentCard: {
-    backgroundColor: colors.background,
-    borderRadius: 14,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+  composerWrap: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  commentHead: {
+  replyBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
   },
-  commentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ECEDE7',
-  },
-  commentAvatarFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  commentInitial: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  commentName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  commentTime: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  commentBody: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
-    marginLeft: 36 + spacing.sm,
-  },
-  reply: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary,
-    marginTop: spacing.sm,
-    marginLeft: 36 + spacing.sm,
+  replyBannerText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textSecondary,
   },
   composer: {
     flexDirection: 'row',
@@ -379,8 +470,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   composerInput: {
     flex: 1,
