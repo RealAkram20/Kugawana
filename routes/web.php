@@ -72,6 +72,11 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::get('/learn', [LearnController::class, 'index'])->name('learn.index');
 
         Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+        Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+        Route::get('/campaigns/{campaign}/edit', [CampaignController::class, 'edit'])->name('campaigns.edit');
+        Route::post('/campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
+        Route::post('/campaigns/{campaign}/toggle', [CampaignController::class, 'toggle'])->name('campaigns.toggle');
+        Route::post('/campaigns/{campaign}/delete', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
