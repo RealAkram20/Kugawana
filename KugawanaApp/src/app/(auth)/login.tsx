@@ -21,6 +21,7 @@ import { useGoogleAuth } from '../../hooks/useGoogleAuth'
 import { useResponsive } from '../../hooks/useResponsive'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../stores/auth.store'
+import { isVerificationRequired, promptEmailVerification } from '../../utils/verifyEmailPrompt'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -60,6 +61,10 @@ export default function LoginScreen() {
       setUser(user)
       router.replace('/(tabs)')
     } catch (error: any) {
+      if (isVerificationRequired(error)) {
+        promptEmailVerification(t, error.response.data.email, error.response.data.message)
+        return
+      }
       const status = error.response?.status
       notify(status === 401 || status === 422 ? t('login.invalidCredentials') : t('login.failed'))
     } finally {

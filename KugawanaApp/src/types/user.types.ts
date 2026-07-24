@@ -7,8 +7,11 @@ export interface User {
   phone: string | null
   role: UserRole
   country_id: number | null
+  country_name?: string | null
   district: string | null
   address: string | null
+  latitude?: number | null
+  longitude?: number | null
   bio: string | null
   profile_photo: string | null
   wallet_balance: number

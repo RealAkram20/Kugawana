@@ -6,11 +6,13 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\Country;
+use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\RewardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -52,6 +54,14 @@ class AuthController extends Controller
 
         app(RewardService::class)->award($user, 'signup');
 
+        // When user verification is on, no token is issued until the emailed link
+        // is clicked — the account exists but cannot sign in yet.
+        if ($this->verificationRequired($user)) {
+            $this->sendVerification($user);
+
+            return $this->verificationRequiredResponse($user, 'Account created. Check your email to verify it.');
+        }
+
         return $this->tokenResponse($user, 'Account created', 201);
     }
 
@@ -79,6 +89,10 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'This account is suspended',
             ], 403);
+        }
+
+        if ($this->verificationRequired($user)) {
+            return $this->verificationRequiredResponse($user, 'Please verify your email before signing in.');
         }
 
         return $this->tokenResponse($user, 'Signed in');
@@ -135,6 +149,12 @@ class AuthController extends Controller
             app(RewardService::class)->award($user, 'signup');
         }
 
+        // Google has already verified the address, so trust it and never gate
+        // these accounts behind our own verification.
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
         if (! $user->is_active) {
             return response()->json([
                 'success' => false,
@@ -143,6 +163,27 @@ class AuthController extends Controller
         }
 
         return $this->tokenResponse($user, 'Signed in');
+    }
+
+    /**
+     * Send a fresh verification link. Always answers the same way so the endpoint
+     * never reveals whether an email belongs to an account.
+     */
+    public function resendVerification(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email']]);
+
+        $user = User::where('email', $data['email'])->first();
+
+        if ($user && ! $user->hasVerifiedEmail() && MailSetting::current()->requiresVerification($user)) {
+            $this->sendVerification($user);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => null,
+            'message' => 'If that email needs verifying, we have sent a new link.',
+        ]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -228,6 +269,32 @@ class AuthController extends Controller
         }
 
         return Country::where('is_active', true)->value('id');
+    }
+
+    /** Verification is on for this user's audience and their email is unverified. */
+    private function verificationRequired(User $user): bool
+    {
+        return MailSetting::current()->requiresVerification($user) && ! $user->hasVerifiedEmail();
+    }
+
+    private function verificationRequiredResponse(User $user, string $message): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'email_verification_required' => true,
+            'email' => $user->email,
+            'message' => $message,
+        ], 403);
+    }
+
+    /** Send the verification link, swallowing mail failures so auth never 500s. */
+    private function sendVerification(User $user): void
+    {
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            Log::error('Verification email failed', ['user' => $user->id, 'error' => $e->getMessage()]);
+        }
     }
 
     private function tokenResponse(User $user, string $message, int $status = 200): JsonResponse

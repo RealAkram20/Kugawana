@@ -14,6 +14,9 @@ use App\Support\ConsoleUi;
 $user = auth()->user();
 $isSuper = $user->role === UserRole::SuperAdmin;
 
+// Unhandled problem reports, shown as a count next to the sidebar link.
+$openReports = App\Models\SupportReport::where('status', App\Enums\SupportReportStatus::New)->count();
+
 $navGroups = [
     ['label' => 'Overview', 'items' => [
         ['icon' => 'dashboard', 'label' => 'Dashboard', 'route' => 'console.dashboard', 'match' => 'console.dashboard'],
@@ -36,6 +39,12 @@ $navGroups = [
     ]],
     ['label' => 'Insights', 'items' => [
         ['icon' => 'reports', 'label' => 'Reports', 'route' => 'console.reports.index', 'match' => 'console.reports.*'],
+    ]],
+    ['label' => 'Support', 'items' => [
+        ['icon' => 'faq', 'label' => 'FAQs', 'route' => 'console.support.faqs.index', 'match' => 'console.support.faqs.*'],
+        ['icon' => 'policy', 'label' => 'Policy pages', 'route' => 'console.support.pages.index', 'match' => 'console.support.pages.*'],
+        ['icon' => 'contact', 'label' => 'Contact details', 'route' => 'console.support.contact.edit', 'match' => 'console.support.contact.*'],
+        ['icon' => 'flag', 'label' => 'Reported problems', 'route' => 'console.support.reports.index', 'match' => 'console.support.reports.*', 'badge' => $openReports],
     ]],
 ];
 
@@ -65,6 +74,9 @@ $countryTag = $user->country ? $user->country->code . ' · ' . $user->country->n
                class="nav-item {{ request()->routeIs($item['match']) ? 'active' : '' }}">
               @include('console.partials.icon', ['name' => $item['icon']])
               <span class="side-label">{{ $item['label'] }}</span>
+              @if (! empty($item['badge']))
+                <span class="side-label nav-badge">{{ $item['badge'] }}</span>
+              @endif
             </a>
           @endforeach
         </div>

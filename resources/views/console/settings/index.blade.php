@@ -26,8 +26,30 @@
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
           <div style="flex:1;font-size:14px;font-weight:600">{{ $g['name'] }}</div>
           <span class="tag {{ $g['status'] === 'Active' ? 'tag-accent' : 'tag-outline' }}">{{ $g['status'] }}</span>
+          @if (! empty($g['route']))
+            <a class="btn btn-ghost" href="{{ $g['route'] }}">Configure</a>
+          @endif
         </div>
       @endforeach
+    </div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+      <h5 style="margin:0;flex:1">Email &amp; verification</h5>
+      <a class="btn btn-ghost" href="{{ $mail['route'] }}">Configure</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
+      <div style="flex:1;font-size:14px;font-weight:600">SMTP server</div>
+      <span class="tag {{ $mail['smtp'] === 'Configured' ? 'tag-accent' : 'tag-outline' }}">{{ $mail['smtp'] }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
+      <div style="flex:1;font-size:14px;font-weight:600">Verify members</div>
+      <span class="tag {{ $mail['verifyUsers'] ? 'tag-accent' : 'tag-outline' }}">{{ $mail['verifyUsers'] ? 'On' : 'Off' }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+      <div style="flex:1;font-size:14px;font-weight:600">Verify admins</div>
+      <span class="tag {{ $mail['verifyAdmins'] ? 'tag-accent' : 'tag-outline' }}">{{ $mail['verifyAdmins'] ? 'On' : 'Off' }}</span>
     </div>
   </div>
 

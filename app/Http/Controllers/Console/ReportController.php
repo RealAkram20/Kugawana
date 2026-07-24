@@ -7,7 +7,6 @@ use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
 use App\Models\FoodDonation;
 use App\Models\Order;
-use App\Models\Rating;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\View\View;
@@ -39,7 +38,12 @@ class ReportController extends Controller
             'h' => (int) round($counts[$i] / $max * 150),
         ]);
 
+        // A donor's score lives on the ratings left against their donations, so
+        // it comes through the ratingsReceived relation — grouping ratings by
+        // user_id would average what the *reviewer* handed out instead.
         $topDonors = User::withCount('donations')
+            ->withCount('ratingsReceived')
+            ->withAvg('ratingsReceived', 'stars')
             ->when($countryId, fn ($q) => $q->where('country_id', $countryId))
             ->having('donations_count', '>', 0)
             ->orderByDesc('donations_count')
@@ -53,17 +57,12 @@ class ReportController extends Controller
             ->limit(5)
             ->get();
 
-        $ratings = Rating::selectRaw('user_id, avg(stars) as avg_stars')
-            ->groupBy('user_id')
-            ->pluck('avg_stars', 'user_id');
-
         return view('console.reports.index', [
             'title' => 'Reports',
             'reportKpis' => $reportKpis,
             'monthBars' => $monthBars,
             'topDonors' => $topDonors,
             'topReceivers' => $topReceivers,
-            'ratings' => $ratings,
         ]);
     }
 }

@@ -12,6 +12,7 @@ import {
   LogOut,
   MapPin,
   ShoppingBag,
+  Star,
   UserCog,
   Users,
   Wallet,
@@ -20,13 +21,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { NotificationsSheet } from '../../components/NotificationsSheet'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { releasePushToken } from '../../hooks/usePushNotifications'
 import i18n from '../../locales/i18n'
 import { authService } from '../../services/auth.service'
 import { foodService } from '../../services/food.service'
+import { memberService } from '../../services/member.service'
 import { notificationsService } from '../../services/notifications.service'
 import { ordersService, walletService } from '../../services/orders.service'
 import { Language, useAppStore } from '../../stores/app.store'
@@ -38,6 +39,7 @@ const iconColors = {
   language: colors.textPrimary,
   shared: colors.primary,
   requests: colors.accent,
+  reviews: colors.accent,
   wallet: '#0F8A6B',
   members: '#2F6FED',
   help: '#7C3AED',
@@ -57,7 +59,6 @@ export default function ProfileScreen() {
   const language = useAppStore((state) => state.language)
   const setLanguage = useAppStore((state) => state.setLanguage)
   const [langOpen, setLangOpen] = useState(false)
-  const [notifOpen, setNotifOpen] = useState(false)
 
   const { data: notifications } = useQuery({
     queryKey: ['notifications'],
@@ -81,6 +82,15 @@ export default function ProfileScreen() {
   const { data: wallet } = useQuery({
     queryKey: ['wallet'],
     queryFn: () => walletService.wallet(),
+  })
+
+  // Reviews are left against the food you shared, so they are read back through
+  // the member endpoint pointed at yourself — same cache key the reviews screen
+  // and the public profile use.
+  const { data: reviews } = useQuery({
+    queryKey: ['member-reviews', String(user?.id)],
+    queryFn: () => memberService.reviews(user!.id),
+    enabled: Boolean(user?.id),
   })
 
   const balance = Math.max(0, wallet?.balance ?? user?.wallet_balance ?? 0)
@@ -158,7 +168,7 @@ export default function ProfileScreen() {
         <View style={styles.menu}>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => setNotifOpen(true)}
+            onPress={() => router.push('/profile/notifications')}
           >
             <Bell size={24} color={iconColors.notifications} strokeWidth={2} />
             <View style={styles.rowText}>
@@ -181,6 +191,22 @@ export default function ProfileScreen() {
             <UserCog size={24} color={iconColors.edit} strokeWidth={2} />
             <View style={styles.rowText}>
               <Text style={styles.rowLabel}>{t('profile.editProfile')}</Text>
+            </View>
+            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => router.push('/profile/wallet')}
+          >
+            <Wallet size={24} color={iconColors.wallet} strokeWidth={2} />
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>{t('profile.wallet')}</Text>
+              <Text style={[styles.rowSub, styles.rowSubAccent]}>
+                {t('wallet.pointsBalance', { count: balance })}
+              </Text>
             </View>
             <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
           </Pressable>
@@ -250,13 +276,15 @@ export default function ProfileScreen() {
 
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => router.push('/profile/wallet')}
+            onPress={() => router.push('/profile/reviews')}
           >
-            <Wallet size={24} color={iconColors.wallet} strokeWidth={2} />
+            <Star size={24} color={iconColors.reviews} strokeWidth={2} />
             <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>{t('profile.wallet')}</Text>
-              <Text style={[styles.rowSub, styles.rowSubAccent]}>
-                {t('wallet.pointsBalance', { count: balance })}
+              <Text style={styles.rowLabel}>{t('myReviews.title')}</Text>
+              <Text style={[styles.rowSub, reviews?.reviews_count ? styles.rowSubAccent : null]}>
+                {reviews?.reviews_count
+                  ? `${reviews.rating.toFixed(1)} · ${t('member.reviews', { count: reviews.reviews_count })}`
+                  : t('orders.noRatings')}
               </Text>
             </View>
             <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
@@ -306,8 +334,6 @@ export default function ProfileScreen() {
           {t('common.appName')} v{Constants.expoConfig?.version ?? '1.0.0'}
         </Text>
       </ScrollView>
-
-      <NotificationsSheet visible={notifOpen} onClose={() => setNotifOpen(false)} />
     </SafeAreaView>
   )
 }

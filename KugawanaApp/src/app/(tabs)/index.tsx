@@ -6,7 +6,6 @@ import {
   Ellipsis,
   Heart,
   MapPin,
-  Menu,
   MessageCircle,
   Salad,
   CirclePlus,
@@ -115,9 +114,6 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
-          <Pressable hitSlop={8}>
-            <Menu size={26} color={colors.textPrimary} strokeWidth={2.2} />
-          </Pressable>
           <CartButton />
         </View>
 
@@ -364,7 +360,7 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginBottom: spacing.lg,
   },
   greeting: {

@@ -8,7 +8,9 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors } from '../constants/colors'
 import { spacing } from '../constants/spacing'
+import { placeSummary } from '../services/location.service'
 import { ordersService } from '../services/orders.service'
+import { UseMyLocationButton } from './UseMyLocationButton'
 import { useAuthStore } from '../stores/auth.store'
 import { cartCount, cartTotalPoints, useCartStore } from '../stores/cart.store'
 import type { CheckoutNote } from '../types/cart.types'
@@ -29,6 +31,12 @@ export function CartSheet() {
 
   const [method, setMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [address, setAddress] = useState('')
+
+  // Most deliveries go to the address already on the profile, so that is the
+  // default; `useOwnAddress` only flips when someone wants it sent elsewhere.
+  const savedAddress = [user?.address, user?.district].filter(Boolean).join(', ')
+  const [useOwnAddress, setUseOwnAddress] = useState(true)
+  const deliveryAddress = useOwnAddress ? savedAddress : address.trim()
 
   const total = cartTotalPoints(items)
   const count = cartCount(items)
@@ -52,7 +60,7 @@ export function CartSheet() {
     mutationFn: () =>
       ordersService.checkout({
         delivery_method: method,
-        delivery_address: method === 'delivery' ? address.trim() : undefined,
+        delivery_address: method === 'delivery' ? deliveryAddress : undefined,
         items: items.map((line) => ({ food_donation_id: line.foodId, units: line.units })),
       }),
     onSuccess: (result) => {
@@ -92,8 +100,11 @@ export function CartSheet() {
   })
 
   const submit = () => {
-    if (method === 'delivery' && !address.trim()) {
-      Alert.alert(t('common.appName'), t('cart.addressRequired'))
+    if (method === 'delivery' && !deliveryAddress) {
+      Alert.alert(
+        t('common.appName'),
+        useOwnAddress ? t('cart.noSavedAddress') : t('cart.addressRequired'),
+      )
       return
     }
     checkout.mutate()
@@ -208,13 +219,44 @@ export function CartSheet() {
                   </View>
 
                   {method === 'delivery' ? (
-                    <TextInput
-                      style={styles.address}
-                      value={address}
-                      onChangeText={setAddress}
-                      placeholder={t('cart.addressPlaceholder')}
-                      placeholderTextColor={colors.textMuted}
-                    />
+                    <View style={styles.deliveryBlock}>
+                      <Pressable style={styles.choice} onPress={() => setUseOwnAddress(true)}>
+                        <View style={[styles.radio, useOwnAddress && styles.radioOn]}>
+                          {useOwnAddress ? <View style={styles.radioDot} /> : null}
+                        </View>
+                        <View style={styles.choiceText}>
+                          <Text style={styles.choiceLabel}>{t('cart.useMyAddress')}</Text>
+                          <Text style={styles.choiceSub}>
+                            {savedAddress || t('cart.noAddressOnProfile')}
+                          </Text>
+                        </View>
+                      </Pressable>
+
+                      <Pressable style={styles.choice} onPress={() => setUseOwnAddress(false)}>
+                        <View style={[styles.radio, !useOwnAddress && styles.radioOn]}>
+                          {!useOwnAddress ? <View style={styles.radioDot} /> : null}
+                        </View>
+                        <View style={styles.choiceText}>
+                          <Text style={styles.choiceLabel}>{t('cart.useOtherAddress')}</Text>
+                        </View>
+                      </Pressable>
+
+                      {!useOwnAddress ? (
+                        <>
+                          <TextInput
+                            style={styles.address}
+                            value={address}
+                            onChangeText={setAddress}
+                            placeholder={t('cart.addressPlaceholder')}
+                            placeholderTextColor={colors.textMuted}
+                          />
+                          <UseMyLocationButton
+                            label={t('location.useForDelivery')}
+                            onResolved={(place) => setAddress(placeSummary(place))}
+                          />
+                        </>
+                      ) : null}
+                    </View>
                   ) : null}
                 </ScrollView>
 
@@ -443,6 +485,48 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textPrimary,
     backgroundColor: colors.surface,
+  },
+  deliveryBlock: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  choice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  radioOn: {
+    borderColor: colors.primary,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  choiceText: {
+    flex: 1,
+    gap: 2,
+  },
+  choiceLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  choiceSub: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
   footer: {
     padding: spacing.md,

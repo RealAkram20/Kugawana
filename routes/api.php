@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommunityController;
+use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\FoodController;
 use App\Http\Controllers\Api\LearnController;
 use App\Http\Controllers\Api\MemberController;
@@ -9,12 +10,14 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RatingController;
+use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/google', [AuthController::class, 'google']);
+Route::post('/auth/email/resend', [AuthController::class, 'resendVerification']);
 
 Route::get('/wallet/pesapal/callback', [WalletController::class, 'pesapalCallback']);
 Route::get('/wallet/pesapal/ipn', [WalletController::class, 'pesapalIpn']);
@@ -25,6 +28,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
+
+    Route::get('/countries', [CountryController::class, 'index']);
 
     Route::get('/members', [MemberController::class, 'index']);
     Route::get('/members/{member}', [MemberController::class, 'show']);
@@ -69,4 +74,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/learn', [LearnController::class, 'index']);
     Route::get('/learn/{article}', [LearnController::class, 'show']);
+
+    Route::get('/support', [SupportController::class, 'index']);
+    Route::get('/support/pages/{page}', [SupportController::class, 'page']);
+    Route::post('/support/report', [SupportController::class, 'report']);
 });

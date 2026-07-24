@@ -24,6 +24,7 @@ import { useGoogleAuth } from '../../hooks/useGoogleAuth'
 import { useResponsive } from '../../hooks/useResponsive'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../stores/auth.store'
+import { isVerificationRequired, promptEmailVerification } from '../../utils/verifyEmailPrompt'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD = 8
@@ -73,6 +74,14 @@ export default function RegisterScreen() {
       setUser(user)
       router.replace('/(tabs)')
     } catch (error: any) {
+      // Account was created but verification is required — send them to sign in
+      // once they have clicked the link.
+      if (isVerificationRequired(error)) {
+        promptEmailVerification(t, error.response.data.email, error.response.data.message, () =>
+          router.replace('/(auth)/login'),
+        )
+        return
+      }
       notify(registerError(error, t))
     } finally {
       setLoading(false)

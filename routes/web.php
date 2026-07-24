@@ -9,10 +9,16 @@ use App\Http\Controllers\Console\CountryController;
 use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\DonationController;
 use App\Http\Controllers\Console\LearnController;
+use App\Http\Controllers\Console\MailSettingController;
 use App\Http\Controllers\Console\OrderController;
 use App\Http\Controllers\Console\PackageController;
+use App\Http\Controllers\Console\PaymentGatewayController;
 use App\Http\Controllers\Console\ReportController;
 use App\Http\Controllers\Console\SettingsController;
+use App\Http\Controllers\Console\SupportContactController;
+use App\Http\Controllers\Console\SupportFaqController;
+use App\Http\Controllers\Console\SupportPageController;
+use App\Http\Controllers\Console\SupportReportController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Controllers\Console\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +26,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('console.login');
 });
+
+// Clicked from a verification email; the signed middleware guarantees the link
+// was issued by us and has not expired.
+Route::get('/email/verify/{id}/{hash}', App\Http\Controllers\Auth\VerifyEmailController::class)
+    ->middleware('signed')
+    ->name('verification.verify');
 
 Route::get('/admin/{any?}', fn () => redirect()->route('console.login'))->where('any', '.*');
 Route::get('/super-admin/{any?}', fn () => redirect()->route('console.login'))->where('any', '.*');
@@ -86,6 +98,29 @@ Route::prefix('console')->name('console.')->group(function () {
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
+        Route::prefix('support')->name('support.')->group(function () {
+            Route::get('/faqs', [SupportFaqController::class, 'index'])->name('faqs.index');
+            Route::post('/faqs', [SupportFaqController::class, 'store'])->name('faqs.store');
+            Route::get('/faqs/{faq}/edit', [SupportFaqController::class, 'edit'])->name('faqs.edit');
+            Route::post('/faqs/{faq}', [SupportFaqController::class, 'update'])->name('faqs.update');
+            Route::post('/faqs/{faq}/toggle', [SupportFaqController::class, 'toggle'])->name('faqs.toggle');
+            Route::post('/faqs/{faq}/delete', [SupportFaqController::class, 'destroy'])->name('faqs.destroy');
+
+            Route::get('/pages', [SupportPageController::class, 'index'])->name('pages.index');
+            Route::post('/pages', [SupportPageController::class, 'store'])->name('pages.store');
+            Route::get('/pages/{page}/edit', [SupportPageController::class, 'edit'])->name('pages.edit');
+            Route::post('/pages/{page}', [SupportPageController::class, 'update'])->name('pages.update');
+            Route::post('/pages/{page}/toggle', [SupportPageController::class, 'toggle'])->name('pages.toggle');
+            Route::post('/pages/{page}/delete', [SupportPageController::class, 'destroy'])->name('pages.destroy');
+
+            Route::get('/contact', [SupportContactController::class, 'edit'])->name('contact.edit');
+            Route::post('/contact', [SupportContactController::class, 'update'])->name('contact.update');
+
+            Route::get('/reports', [SupportReportController::class, 'index'])->name('reports.index');
+            Route::get('/reports/{report}', [SupportReportController::class, 'show'])->name('reports.show');
+            Route::post('/reports/{report}', [SupportReportController::class, 'update'])->name('reports.update');
+        });
+
         Route::middleware('console.super')->group(function () {
             Route::get('/countries', [CountryController::class, 'index'])->name('countries.index');
             Route::post('/countries/{country}/toggle', [CountryController::class, 'toggle'])->name('countries.toggle');
@@ -94,6 +129,14 @@ Route::prefix('console')->name('console.')->group(function () {
             Route::post('/admins/{user}/approve', [AdminController::class, 'approve'])->name('admins.approve');
 
             Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+            Route::get('/settings/pesapal', [PaymentGatewayController::class, 'edit'])->name('settings.pesapal.edit');
+            Route::post('/settings/pesapal', [PaymentGatewayController::class, 'update'])->name('settings.pesapal.update');
+            Route::post('/settings/pesapal/register-ipn', [PaymentGatewayController::class, 'registerIpn'])->name('settings.pesapal.register-ipn');
+            Route::post('/settings/pesapal/test', [PaymentGatewayController::class, 'test'])->name('settings.pesapal.test');
+
+            Route::get('/settings/mail', [MailSettingController::class, 'edit'])->name('settings.mail.edit');
+            Route::post('/settings/mail', [MailSettingController::class, 'update'])->name('settings.mail.update');
+            Route::post('/settings/mail/test', [MailSettingController::class, 'test'])->name('settings.mail.test');
         });
     });
 });

@@ -29,5 +29,8 @@ class AppServiceProvider extends ServiceProvider
 
         Paginator::defaultView('console.partials.pagination');
         Paginator::defaultSimpleView('console.partials.pagination');
+
+        // Route outgoing mail through the SMTP connection the super admin saved.
+        \App\Support\MailConfig::apply();
     }
 }

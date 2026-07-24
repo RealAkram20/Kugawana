@@ -9,7 +9,6 @@ use App\Http\Controllers\Controller;
 use App\Models\CommunityPost;
 use App\Models\FoodDonation;
 use App\Models\Order;
-use App\Models\Rating;
 use App\Models\User;
 use App\Support\CategoryIcons;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +22,8 @@ class MemberController extends Controller
         $members = User::query()
             ->whereIn('role', [UserRole::Donor, UserRole::Receiver])
             ->where('is_active', true)
+            ->withCount('ratingsReceived')
+            ->withAvg('ratingsReceived', 'stars')
             ->when($request->string('search')->trim()->value(), function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%");
             })
@@ -30,13 +31,12 @@ class MemberController extends Controller
             ->limit(100)
             ->get()
             ->map(function (User $member) {
-                $ratings = Rating::whereHas('foodDonation', fn ($q) => $q->where('donor_id', $member->id));
-                $reviewsCount = (clone $ratings)->count();
+                $reviewsCount = (int) $member->ratings_received_count;
 
                 return [
                     'id' => $member->id,
                     'name' => $member->name,
-                    'rating' => $reviewsCount > 0 ? (float) round((clone $ratings)->avg('stars'), 1) : 0,
+                    'rating' => $reviewsCount > 0 ? round((float) $member->ratings_received_avg_stars, 1) : 0.0,
                     'reviews_count' => $reviewsCount,
                     'role_label' => 'Member',
                     'profile_photo' => MediaUrl::for($member->profile_photo),
@@ -52,7 +52,9 @@ class MemberController extends Controller
 
     public function show(User $member): JsonResponse
     {
-        $member->loadMissing('country');
+        $member->loadMissing('country')
+            ->loadCount('ratingsReceived')
+            ->loadAvg('ratingsReceived', 'stars');
 
         $posts = CommunityPost::where('user_id', $member->id)->count();
         $shared = FoodDonation::where('donor_id', $member->id)->count();
@@ -60,9 +62,8 @@ class MemberController extends Controller
             ->where('status', OrderStatus::Completed)
             ->count();
 
-        $ratings = Rating::whereHas('foodDonation', fn ($q) => $q->where('donor_id', $member->id));
-        $reviewsCount = (clone $ratings)->count();
-        $rating = $reviewsCount > 0 ? round((clone $ratings)->avg('stars'), 1) : 0;
+        $reviewsCount = (int) $member->ratings_received_count;
+        $rating = $reviewsCount > 0 ? round((float) $member->ratings_received_avg_stars, 1) : 0.0;
 
         $activity = FoodDonation::with(['category', 'unit'])
             ->where('donor_id', $member->id)

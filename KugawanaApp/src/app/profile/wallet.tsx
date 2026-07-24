@@ -1,21 +1,21 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Stack } from 'expo-router'
-import * as WebBrowser from 'expo-web-browser'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Card } from '../../components/ui/Card'
 import { CartButton } from '../../components/CartButton'
+import { PesapalCheckout } from '../../components/PesapalCheckout'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { walletService } from '../../services/orders.service'
-
-const CALLBACK_URL = `${process.env.EXPO_PUBLIC_API_URL}/wallet/pesapal/callback`
 
 export default function WalletScreen() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [processingId, setProcessingId] = useState<number | null>(null)
+  // The open payment sheet: the Pesapal URL to show and which top-up it settles.
+  const [checkout, setCheckout] = useState<{ url: string; topupId: number } | null>(null)
 
   const { data: wallet } = useQuery({
     queryKey: ['wallet'],
@@ -65,14 +65,28 @@ export default function WalletScreen() {
         return
       }
 
-      await WebBrowser.openAuthSessionAsync(order.redirect_url, CALLBACK_URL)
-      await confirmTopup(order.id)
+      // Hand off to the in-app payment sheet; it closes itself on completion.
+      setCheckout({ url: order.redirect_url, topupId: order.id })
     } catch (error: any) {
       const message = error.response?.data?.message ?? t('wallet.payFailed')
       Alert.alert(t('common.appName'), message)
     } finally {
       setProcessingId(null)
     }
+  }
+
+  // Reached Pesapal's callback: close the sheet, then poll for the credited points.
+  const onCheckoutComplete = () => {
+    const topupId = checkout?.topupId
+    setCheckout(null)
+    if (topupId) confirmTopup(topupId)
+  }
+
+  // Dismissed early. The payment may still have gone through, so refresh quietly
+  // rather than assuming it failed.
+  const onCheckoutClose = () => {
+    setCheckout(null)
+    refreshWallet()
   }
 
   return (
@@ -128,6 +142,12 @@ export default function WalletScreen() {
           </View>
         )}
         ListEmptyComponent={<Text style={styles.empty}>{t('orders.empty')}</Text>}
+      />
+
+      <PesapalCheckout
+        url={checkout?.url ?? null}
+        onComplete={onCheckoutComplete}
+        onClose={onCheckoutClose}
       />
     </View>
   )
