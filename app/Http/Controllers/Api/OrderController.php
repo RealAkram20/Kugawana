@@ -17,6 +17,7 @@ use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -257,6 +258,10 @@ class OrderController extends Controller
         $skipped = [];
         $adjusted = [];
 
+        // Every line placed in this checkout shares one id, so the admin sees
+        // the basket as a single order.
+        $groupId = (string) Str::uuid();
+
         foreach ($data['items'] as $line) {
             $food = FoodDonation::find($line['food_donation_id']);
 
@@ -274,7 +279,7 @@ class OrderController extends Controller
             }
 
             try {
-                $order = $this->placeLine($request->user(), $food, $units, $data['delivery_method'], $data['delivery_address'] ?? null, $wallet, $splitter);
+                $order = $this->placeLine($request->user(), $food, $units, $data['delivery_method'], $data['delivery_address'] ?? null, $wallet, $splitter, $groupId);
             } catch (InsufficientPointsException) {
                 $skipped[] = $this->lineNote($food->id, $food->title, 'insufficient_points');
                 continue;
@@ -326,11 +331,11 @@ class OrderController extends Controller
      * @throws InsufficientPointsException
      * @throws OutOfStockException
      */
-    private function placeLine(User $receiver, FoodDonation $food, int $units, string $method, ?string $address, WalletService $wallet, FoodSplitService $splitter): Order
+    private function placeLine(User $receiver, FoodDonation $food, int $units, string $method, ?string $address, WalletService $wallet, FoodSplitService $splitter, ?string $groupId = null): Order
     {
         $points = $food->points_required * $units;
 
-        return DB::transaction(function () use ($receiver, $food, $units, $points, $method, $address, $wallet, $splitter) {
+        return DB::transaction(function () use ($receiver, $food, $units, $points, $method, $address, $wallet, $splitter, $groupId) {
             $splitter->claim($food, $units);
 
             $wallet->deduct($receiver, $points, 'order', 'food ' . $food->id);
@@ -342,6 +347,7 @@ class OrderController extends Controller
             return Order::create([
                 'receiver_id' => $receiver->id,
                 'food_donation_id' => $food->id,
+                'group_id' => $groupId,
                 'points_spent' => $points,
                 'units' => $units,
                 'delivery_method' => $method,

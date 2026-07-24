@@ -44,6 +44,9 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::post('/donations/{donation}/unsplit', [DonationController::class, 'unsplit'])->name('donations.unsplit');
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::post('/orders/group/{group}/accept', [OrderController::class, 'acceptGroup'])->name('orders.group.accept');
+        Route::post('/orders/group/{group}/deliver', [OrderController::class, 'deliverGroup'])->name('orders.group.deliver');
+        Route::post('/orders/group/{group}/cancel', [OrderController::class, 'cancelGroup'])->name('orders.group.cancel');
         Route::post('/orders/{order}/accept', [OrderController::class, 'accept'])->name('orders.accept');
         Route::post('/orders/{order}/deliver', [OrderController::class, 'deliver'])->name('orders.deliver');
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');

@@ -13,6 +13,7 @@ class Order extends Model
     protected $fillable = [
         'receiver_id',
         'food_donation_id',
+        'group_id',
         'status',
         'points_spent',
         'units',
