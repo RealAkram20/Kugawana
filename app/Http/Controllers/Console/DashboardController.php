@@ -33,7 +33,7 @@ class DashboardController extends Controller
         $kpis = [
             ['label' => 'Food listings', 'value' => number_format((clone $donations)->count()), 'icon' => 'donations', 'delta' => 'All time', 'alert' => false],
             ['label' => 'Meals distributed', 'value' => number_format(Order::whereNotNull('completed_at')->count()), 'icon' => 'orders', 'delta' => 'Orders completed', 'alert' => false],
-            ['label' => 'Active users', 'value' => number_format(User::whereIn('role', [UserRole::Donor, UserRole::Receiver])->where('is_active', true)->when($countryId, fn ($q) => $q->where('country_id', $countryId))->count()), 'icon' => 'users', 'delta' => 'Donors and receivers', 'alert' => false],
+            ['label' => 'Active users', 'value' => number_format(User::whereIn('role', [UserRole::Donor, UserRole::Receiver])->where('is_active', true)->when($countryId, fn ($q) => $q->where('country_id', $countryId))->count()), 'icon' => 'users', 'delta' => 'Members', 'alert' => false],
             ['label' => 'Revenue (UGX)', 'value' => number_format((float) WalletTopup::where('status', TopupStatus::Approved)->sum('amount')), 'icon' => 'wallet', 'delta' => 'Approved topups', 'alert' => false],
             ['label' => 'Points issued', 'value' => number_format((int) WalletTransaction::where('type', TransactionType::Credit)->sum('points')), 'icon' => 'campaigns', 'delta' => 'All credits', 'alert' => false],
             ['label' => 'Pending review', 'value' => number_format($pendingCount), 'icon' => 'reports', 'delta' => $pendingCount > 0 ? 'Needs attention' : 'All clear', 'alert' => $pendingCount > 0],

@@ -56,7 +56,10 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::post('/wallet/{topup}/reject', [WalletController::class, 'reject'])->name('wallet.reject');
 
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users/grant-bulk', [UserController::class, 'grantBulk'])->name('users.grant-bulk');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
         Route::post('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
+        Route::post('/users/{user}/grant', [UserController::class, 'grant'])->name('users.grant');
 
         Route::get('/community', [CommunityController::class, 'index'])->name('community.index');
         Route::post('/community/{post}/keep', [CommunityController::class, 'keep'])->name('community.keep');

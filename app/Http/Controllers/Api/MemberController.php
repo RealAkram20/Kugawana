@@ -38,7 +38,7 @@ class MemberController extends Controller
                     'name' => $member->name,
                     'rating' => $reviewsCount > 0 ? (float) round((clone $ratings)->avg('stars'), 1) : 0,
                     'reviews_count' => $reviewsCount,
-                    'role_label' => $member->role === UserRole::Donor ? 'Food Provider' : 'Active Member',
+                    'role_label' => 'Member',
                     'profile_photo' => MediaUrl::for($member->profile_photo),
                 ];
             });
@@ -89,7 +89,7 @@ class MemberController extends Controller
             'data' => [
                 'id' => $member->id,
                 'name' => $member->name,
-                'role_label' => $member->role === UserRole::Donor ? 'Food Provider' : 'Food Receiver',
+                'role_label' => 'Member',
                 'profile_photo' => MediaUrl::for($member->profile_photo),
                 'rating' => (float) $rating,
                 'reviews_count' => $reviewsCount,

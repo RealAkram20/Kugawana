@@ -21,7 +21,7 @@ $navGroups = [
     ['label' => 'Operations', 'items' => [
         ['icon' => 'donations', 'label' => 'Food donations', 'route' => 'console.donations.index', 'match' => 'console.donations.*'],
         ['icon' => 'orders', 'label' => 'Orders', 'route' => 'console.orders.index', 'match' => 'console.orders.*'],
-        ['icon' => 'wallet', 'label' => 'Wallet requests', 'route' => 'console.wallet.index', 'match' => 'console.wallet.*'],
+        ['icon' => 'wallet', 'label' => 'Points', 'route' => 'console.wallet.index', 'match' => 'console.wallet.*'],
     ]],
     ['label' => 'Catalog', 'items' => [
         ['icon' => 'categories', 'label' => 'Categories', 'route' => 'console.categories.index', 'match' => 'console.categories.*'],
@@ -29,7 +29,7 @@ $navGroups = [
     ]],
     ['label' => 'Community', 'items' => [
         ['icon' => 'community', 'label' => 'Community', 'route' => 'console.community.index', 'match' => 'console.community.*'],
-        ['icon' => 'users', 'label' => 'Users', 'route' => 'console.users.index', 'match' => 'console.users.*'],
+        ['icon' => 'users', 'label' => 'Members', 'route' => 'console.users.index', 'match' => 'console.users.*'],
     ]],
     ['label' => 'Growth', 'items' => [
         ['icon' => 'campaigns', 'label' => 'Reward campaigns', 'route' => 'console.campaigns.index', 'match' => 'console.campaigns.*'],

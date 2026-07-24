@@ -26,7 +26,7 @@ class WalletController extends Controller
         $packages = PointPackage::where('is_active', true)->orderBy('points')->get();
 
         return view('console.wallet.index', [
-            'title' => 'Wallet requests',
+            'title' => 'Points',
             'requests' => $requests,
             'packages' => $packages,
         ]);
