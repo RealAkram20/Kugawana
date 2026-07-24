@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -60,7 +59,7 @@ export default function EditProfileScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: t('profile.editProfile'), headerRight: () => <CartButton /> }} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('editProfile.name')}</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} />

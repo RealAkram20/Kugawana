@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -67,7 +66,7 @@ export default function EditRequestScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: t('requestDetail.editRequest'), headerRight: () => <CartButton /> }} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('requestDetail.preferredQuantity')}</Text>
           <TextInput
