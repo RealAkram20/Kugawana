@@ -40,10 +40,13 @@ export default function FoodDetailScreen() {
     mutationFn: () => ordersService.placeOrder(Number(id), method, undefined, claimed),
     onSuccess: () => {
       if (user && food) {
-        setUser({ ...user, wallet_balance: user.wallet_balance - totalPoints })
+        // Clamped, because this cached copy is only a guess until the wallet
+        // query below comes back with what the server actually charged.
+        setUser({ ...user, wallet_balance: Math.max(0, user.wallet_balance - totalPoints) })
       }
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       queryClient.invalidateQueries({ queryKey: ['food'] })
+      queryClient.invalidateQueries({ queryKey: ['wallet'] })
       Alert.alert(t('common.appName'), t('food.requested'))
       router.back()
     },

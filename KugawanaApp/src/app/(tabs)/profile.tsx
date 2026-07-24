@@ -28,7 +28,7 @@ import i18n from '../../locales/i18n'
 import { authService } from '../../services/auth.service'
 import { foodService } from '../../services/food.service'
 import { notificationsService } from '../../services/notifications.service'
-import { ordersService } from '../../services/orders.service'
+import { ordersService, walletService } from '../../services/orders.service'
 import { Language, useAppStore } from '../../stores/app.store'
 import { useAuthStore } from '../../stores/auth.store'
 
@@ -73,6 +73,17 @@ export default function ProfileScreen() {
     queryKey: ['orders'],
     queryFn: () => ordersService.myOrders(),
   })
+
+  // The signed-in user is persisted to disk, so its wallet_balance is a snapshot
+  // from whenever it was last written and drifts as points are spent and topped
+  // up. The wallet screen reads the server, so this row does too — otherwise the
+  // two disagree, and the stale copy can even go negative.
+  const { data: wallet } = useQuery({
+    queryKey: ['wallet'],
+    queryFn: () => walletService.wallet(),
+  })
+
+  const balance = Math.max(0, wallet?.balance ?? user?.wallet_balance ?? 0)
 
   const currentLang = languages.find((l) => l.code === (language ?? 'en'))?.label ?? 'English'
   const location = [user?.district, user?.address].filter(Boolean).join(', ')
@@ -245,7 +256,7 @@ export default function ProfileScreen() {
             <View style={styles.rowText}>
               <Text style={styles.rowLabel}>{t('profile.wallet')}</Text>
               <Text style={[styles.rowSub, styles.rowSubAccent]}>
-                {t('wallet.pointsBalance', { count: user?.wallet_balance ?? 0 })}
+                {t('wallet.pointsBalance', { count: balance })}
               </Text>
             </View>
             <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />

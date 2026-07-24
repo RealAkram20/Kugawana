@@ -57,7 +57,11 @@ export function CartSheet() {
       }),
     onSuccess: (result) => {
       const spent = result.placed.reduce((sum, order) => sum + order.points_spent, 0)
-      if (user && spent > 0) setUser({ ...user, wallet_balance: user.wallet_balance - spent })
+      // Clamped, because this cached copy is only a guess until the wallet query
+      // below comes back with what the server actually charged.
+      if (user && spent > 0) {
+        setUser({ ...user, wallet_balance: Math.max(0, user.wallet_balance - spent) })
+      }
 
       // Keep only the skipped lines; anything placed or reduced leaves the basket.
       const skippedIds = result.skipped.map((note) => note.food_donation_id)
@@ -65,6 +69,7 @@ export function CartSheet() {
 
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       queryClient.invalidateQueries({ queryKey: ['food'] })
+      queryClient.invalidateQueries({ queryKey: ['wallet'] })
 
       const notices = [...result.adjusted.map(noticeFor), ...result.skipped.map(noticeFor)].filter(Boolean)
       const placedCount = result.placed.length
