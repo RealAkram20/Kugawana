@@ -34,6 +34,7 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
         Route::get('/donations/export', [DonationController::class, 'export'])->name('donations.export');
         Route::get('/donations/{donation}', [DonationController::class, 'show'])->name('donations.show');
+        Route::post('/donations/{donation}', [DonationController::class, 'update'])->name('donations.update');
         Route::post('/donations/{donation}/approve', [DonationController::class, 'approve'])->name('donations.approve');
         Route::post('/donations/{donation}/reject', [DonationController::class, 'reject'])->name('donations.reject');
         Route::post('/donations/{donation}/publish', [DonationController::class, 'publish'])->name('donations.publish');

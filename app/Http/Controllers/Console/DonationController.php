@@ -6,12 +6,15 @@ use App\Enums\FoodStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
+use App\Models\FoodCategory;
 use App\Models\FoodDonation;
+use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\FoodSplitService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -81,7 +84,82 @@ class DonationController extends Controller
             'current' => $current,
             'warehouses' => $warehouses,
             'sources' => $this->sources($donation),
+            'categories' => FoodCategory::where('is_active', true)->orderBy('name')->get(),
+            'units' => Unit::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
         ]);
+    }
+
+    /** Photos are stored beside every other food image, on the public disk. */
+    private const MAX_IMAGES = 5;
+
+    /**
+     * Lets the admin tidy a submission before it goes public: fix the photos,
+     * correct the quantity a donor guessed at, or set the right unit. The food
+     * stays credited to the donor; only its presentation changes.
+     */
+    public function update(Request $request, FoodDonation $donation): RedirectResponse
+    {
+        $this->guardScope($donation);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'food_category_id' => ['required', 'exists:food_categories,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:999999'],
+            'unit_id' => ['required', Rule::exists('units', 'id')->where('is_active', true)],
+            'pickup_address' => ['nullable', 'string', 'max:255'],
+            'contact_number' => ['nullable', 'string', 'max:30'],
+            'expiry_date' => ['required', 'date'],
+            'special_instructions' => ['nullable', 'string'],
+            'remove_images' => ['nullable', 'array'],
+            'remove_images.*' => ['string'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+        ]);
+
+        // A split batch already sized its units against the old amount, so
+        // changing the whole out from under them would leave the counts wrong.
+        if ($donation->isSplit() && (float) $data['amount'] !== (float) $donation->amount) {
+            return back()->with('toast', 'Undo the split before changing the total quantity');
+        }
+
+        $images = $this->reconcileImages($request, $donation, $data['remove_images'] ?? []);
+
+        $donation->update([
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'food_category_id' => $data['food_category_id'],
+            'amount' => $data['amount'],
+            'unit_id' => $data['unit_id'],
+            'pickup_address' => $data['pickup_address'] ?? null,
+            'contact_number' => $data['contact_number'] ?? null,
+            'expiry_date' => $data['expiry_date'],
+            'special_instructions' => $data['special_instructions'] ?? null,
+            'images' => $images,
+        ]);
+
+        return back()->with('toast', "{$donation->title} updated");
+    }
+
+    /**
+     * Drops the photos the admin unchecked, appends any new uploads, and keeps
+     * the gallery within its cap. Removed files leave the disk so nothing is
+     * orphaned.
+     *
+     * @return array<int, string>
+     */
+    private function reconcileImages(Request $request, FoodDonation $donation, array $remove): array
+    {
+        $kept = collect($donation->images ?? [])->reject(fn ($path) => in_array($path, $remove, true));
+
+        foreach ($remove as $path) {
+            Storage::disk('public')->delete($path);
+        }
+
+        $added = collect($request->file('images') ?? [])
+            ->map(fn ($file) => $file->store('food', 'public'));
+
+        return $kept->merge($added)->take(self::MAX_IMAGES)->values()->all();
     }
 
     /**
