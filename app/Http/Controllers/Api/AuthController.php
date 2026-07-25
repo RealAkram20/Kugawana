@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Models\AuthSetting;
 use App\Models\Country;
 use App\Models\MailSetting;
 use App\Models\User;
@@ -109,7 +110,16 @@ class AuthController extends Controller
             'id_token' => ['required', 'string'],
         ]);
 
-        $clientIds = config('services.google.client_ids');
+        $setting = AuthSetting::current();
+
+        if (! $setting->google_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Google sign-in is turned off',
+            ], 503);
+        }
+
+        $clientIds = $setting->googleClientIds();
 
         if (empty($clientIds)) {
             return response()->json([

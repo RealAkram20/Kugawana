@@ -8,6 +8,7 @@ use App\Http\Controllers\Console\CommunityController;
 use App\Http\Controllers\Console\CountryController;
 use App\Http\Controllers\Console\DashboardController;
 use App\Http\Controllers\Console\DonationController;
+use App\Http\Controllers\Console\GoogleAuthController;
 use App\Http\Controllers\Console\LearnController;
 use App\Http\Controllers\Console\MailSettingController;
 use App\Http\Controllers\Console\OrderController;
@@ -141,6 +142,9 @@ Route::prefix('console')->name('console.')->group(function () {
             Route::get('/settings/mail', [MailSettingController::class, 'edit'])->name('settings.mail.edit');
             Route::post('/settings/mail', [MailSettingController::class, 'update'])->name('settings.mail.update');
             Route::post('/settings/mail/test', [MailSettingController::class, 'test'])->name('settings.mail.test');
+
+            Route::get('/settings/google', [GoogleAuthController::class, 'edit'])->name('settings.google.edit');
+            Route::post('/settings/google', [GoogleAuthController::class, 'update'])->name('settings.google.update');
         });
     });
 });

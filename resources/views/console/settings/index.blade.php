@@ -54,6 +54,17 @@
   </div>
 
   <div class="panel">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+      <h5 style="margin:0;flex:1">Sign-in methods</h5>
+      <a class="btn btn-ghost" href="{{ $google['route'] }}">Configure</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+      <div style="flex:1;font-size:14px;font-weight:600">Google sign-in</div>
+      <span class="tag {{ $google['status'] === 'Active' ? 'tag-accent' : 'tag-outline' }}">{{ $google['status'] }}</span>
+    </div>
+  </div>
+
+  <div class="panel">
     <h5 style="margin:0 0 12px">Languages</h5>
     <p class="text-muted" style="font-size:13px;margin-bottom:14px">UI strings served from translation files. Content follows the user's selection where a translation exists.</p>
     <div style="display:flex;gap:8px">
