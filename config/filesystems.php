@@ -32,8 +32,15 @@ return [
 
         'local' => [
             'driver' => 'local',
+            // Off: Laravel's default "serve" route for this disk has no
+            // explicit `url`, so it defaults to the same `/storage` prefix
+            // our `public` disk (and the route below) use — left on, it
+            // shadows every request there with 404s from the wrong disk
+            // root. Nothing in this app uses Storage::disk('local') or its
+            // temporaryUrl(); Livewire/Filament's upload previews go through
+            // the `public` disk (config('filesystems.default')) instead.
             'root' => storage_path('app/private'),
-            'serve' => true,
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

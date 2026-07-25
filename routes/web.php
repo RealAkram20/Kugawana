@@ -24,10 +24,21 @@ use App\Http\Controllers\Console\SupportReportController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Controllers\Console\WalletController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return redirect()->route('console.login');
 });
+
+// Some shared hosts (e.g. Hostinger) disable PHP's symlink() function, so
+// `storage:link` can't create public/storage. Serve the public disk directly
+// instead — same URLs (config('filesystems.disks.public.url') is unchanged),
+// no symlink required.
+Route::get('/storage/{path}', function (string $path) {
+    abort_unless(Storage::disk('public')->exists($path), 404);
+
+    return response()->file(Storage::disk('public')->path($path));
+})->where('path', '.*')->name('storage.public.serve');
 
 // Clicked from a verification email; the signed middleware guarantees the link
 // was issued by us and has not expired.
