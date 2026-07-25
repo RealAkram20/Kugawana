@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Notifications\KugawanaNotification;
 use App\Services\FoodSplitService;
 use App\Services\WalletService;
 use Illuminate\Database\Eloquent\Collection;
@@ -83,6 +84,13 @@ class OrderController extends Controller
 
         $order->update(['status' => OrderStatus::Accepted]);
 
+        $this->notifyReceiver(
+            $order,
+            'order.accepted',
+            'Your request was accepted',
+            "Your request for \"{$order->foodDonation?->title}\" was accepted."
+        );
+
         return back()->with('toast', "Order {$order->id} accepted");
     }
 
@@ -95,7 +103,20 @@ class OrderController extends Controller
             'completed_at' => now(),
         ]);
 
+        $this->notifyReceiver(
+            $order,
+            'order.completed',
+            'Order delivered',
+            "\"{$order->foodDonation?->title}\" was marked as delivered."
+        );
+
         return back()->with('toast', "Order {$order->id} marked delivered");
+    }
+
+    /** Tells the person who requested the food that an admin acted on their order. */
+    private function notifyReceiver(?Order $order, string $type, string $title, string $body): void
+    {
+        $order?->receiver?->notify(new KugawanaNotification($type, $title, $body, 'orders'));
     }
 
     public function cancel(Order $order): RedirectResponse
@@ -117,21 +138,39 @@ class OrderController extends Controller
 
     public function acceptGroup(string $group): RedirectResponse
     {
-        $this->groupOrders($group)
-            ->filter(fn (Order $order) => $order->status === OrderStatus::Pending)
+        $orders = $this->groupOrders($group);
+
+        $orders->filter(fn (Order $order) => $order->status === OrderStatus::Pending)
             ->each(fn (Order $order) => $order->update(['status' => OrderStatus::Accepted]));
+
+        // One ping for the whole basket, not one per line — a basket shares a
+        // single receiver.
+        $this->notifyReceiver(
+            $orders->first(),
+            'order.accepted',
+            'Your request was accepted',
+            'Your basket request was accepted.'
+        );
 
         return back()->with('toast', 'Basket accepted');
     }
 
     public function deliverGroup(string $group): RedirectResponse
     {
-        $this->groupOrders($group)
-            ->filter(fn (Order $order) => $order->status === OrderStatus::Accepted)
+        $orders = $this->groupOrders($group);
+
+        $orders->filter(fn (Order $order) => $order->status === OrderStatus::Accepted)
             ->each(fn (Order $order) => $order->update([
                 'status' => OrderStatus::Completed,
                 'completed_at' => now(),
             ]));
+
+        $this->notifyReceiver(
+            $orders->first(),
+            'order.completed',
+            'Order delivered',
+            'Your basket order was marked as delivered.'
+        );
 
         return back()->with('toast', 'Basket marked delivered');
     }

@@ -28,6 +28,7 @@ const ICONS: Record<string, { Icon: typeof Heart; color: string }> = {
   'community.like': { Icon: Heart, color: colors.error },
   'community.comment': { Icon: MessageCircle, color: '#2F6FED' },
   'order.requested': { Icon: ShoppingBag, color: colors.primary },
+  'order.accepted': { Icon: ShoppingBag, color: '#0F8A6B' },
   'order.completed': { Icon: Package, color: '#0F8A6B' },
   'order.cancelled': { Icon: Package, color: colors.textSecondary },
 }
@@ -41,6 +42,11 @@ function openTarget(notification: AppNotification) {
 
   if (notification.route === 'support') {
     router.push('/profile/help')
+    return
+  }
+
+  if (notification.route === 'orders') {
+    router.push('/profile/requests')
     return
   }
 

@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Filament\Admin\Resources\OrderResource\Pages;
 use App\Models\Order;
+use App\Notifications\KugawanaNotification;
 use App\Services\WalletService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -82,17 +83,35 @@ class OrderResource extends Resource
                     ->icon('heroicon-o-check-circle')
                     ->color('info')
                     ->requiresConfirmation()
-                    ->action(fn (Order $record) => $record->update(['status' => OrderStatus::Accepted]))
+                    ->action(function (Order $record) {
+                        $record->update(['status' => OrderStatus::Accepted]);
+
+                        static::notifyReceiver(
+                            $record,
+                            'order.accepted',
+                            'Your request was accepted',
+                            "Your request for \"{$record->foodDonation?->title}\" was accepted."
+                        );
+                    })
                     ->visible(fn (Order $record) => $record->status === OrderStatus::Pending),
                 Tables\Actions\Action::make('mark_delivered')
                     ->label('Mark delivered')
                     ->icon('heroicon-o-truck')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->action(fn (Order $record) => $record->update([
-                        'status' => OrderStatus::Completed,
-                        'completed_at' => now(),
-                    ]))
+                    ->action(function (Order $record) {
+                        $record->update([
+                            'status' => OrderStatus::Completed,
+                            'completed_at' => now(),
+                        ]);
+
+                        static::notifyReceiver(
+                            $record,
+                            'order.completed',
+                            'Order delivered',
+                            "\"{$record->foodDonation?->title}\" was marked as delivered."
+                        );
+                    })
                     ->visible(fn (Order $record) => $record->status === OrderStatus::Accepted),
                 Tables\Actions\Action::make('cancel')
                     ->icon('heroicon-o-x-circle')
@@ -115,6 +134,13 @@ class OrderResource extends Resource
                                     (string) $locked->id
                                 );
                             }
+
+                            static::notifyReceiver(
+                                $locked,
+                                'order.cancelled',
+                                'Your request was cancelled',
+                                "Your request for \"{$locked->foodDonation?->title}\" was cancelled and refunded."
+                            );
                         });
                     })
                     ->visible(fn (Order $record) => in_array($record->status, [OrderStatus::Pending, OrderStatus::Accepted])),
@@ -129,5 +155,11 @@ class OrderResource extends Resource
             'index' => Pages\ListOrders::route('/'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
+    }
+
+    /** Tells the person who requested the food that an admin acted on their order. */
+    private static function notifyReceiver(Order $order, string $type, string $title, string $body): void
+    {
+        $order->receiver?->notify(new KugawanaNotification($type, $title, $body, 'orders'));
     }
 }
