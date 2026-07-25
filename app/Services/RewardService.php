@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\RewardCampaign;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Notifications\KugawanaNotification;
 
 class RewardService
 {
@@ -34,6 +35,15 @@ class RewardService
 
             $this->wallet->credit($user, $campaign->points, 'reward: ' . $campaign->name, $ref);
             $awarded += $campaign->points;
+        }
+
+        if ($awarded > 0) {
+            $user->notify(new KugawanaNotification(
+                'reward.earned',
+                'You earned points',
+                $awarded . ' points were added to your wallet.',
+                'wallet',
+            ));
         }
 
         return $awarded;

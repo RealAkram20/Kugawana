@@ -34,6 +34,16 @@ const ICONS: Record<string, { Icon: typeof Heart; color: string }> = {
 
 /** Maps the server's `route` family onto an actual screen. */
 function openTarget(notification: AppNotification) {
+  if (notification.route === 'wallet') {
+    router.push('/profile/wallet')
+    return
+  }
+
+  if (notification.route === 'support') {
+    router.push('/profile/help')
+    return
+  }
+
   const id = notification.route_id
 
   if (!id) return

@@ -9,6 +9,7 @@ use App\Models\FoodCategory;
 use App\Models\FoodDonation;
 use App\Models\Unit;
 use App\Services\RewardService;
+use App\Support\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -217,6 +218,14 @@ class FoodController extends Controller
         ]);
 
         $donation->load(['category', 'unit']);
+
+        AdminNotifier::alert(
+            $donation->country_id,
+            'donation_new',
+            'New food donation',
+            $request->user()->name . ' posted ' . $donation->title,
+            route('console.donations.show', $donation),
+        );
 
         return response()->json([
             'success' => true,

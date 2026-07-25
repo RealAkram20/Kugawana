@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Notifications\KugawanaNotification;
 use App\Services\FoodSplitService;
 use App\Services\WalletService;
+use App\Support\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -367,6 +368,14 @@ class OrderController extends Controller
             'order.requested',
             'New request for your food',
             "{$receiver->name} requested \"{$order->foodDonation?->title}\"."
+        );
+
+        AdminNotifier::alert(
+            $order->foodDonation?->country_id,
+            'order_new',
+            'New order placed',
+            "{$receiver->name} requested \"{$order->foodDonation?->title}\".",
+            route('console.orders.index'),
         );
     }
 

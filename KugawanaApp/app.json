@@ -57,7 +57,15 @@
           "locationWhenInUsePermission": "Allow Kugawana to use your location so it can fill in your district and address, and where food should be delivered."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#ec3013",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

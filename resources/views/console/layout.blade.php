@@ -105,9 +105,9 @@ $countryTag = $user->country ? $user->country->code . ' · ' . $user->country->n
         <input class="input" name="q" placeholder="Search" value="{{ request('q') }}">
       </form>
       <span class="tag tag-neutral">{{ $countryTag }}</span>
-      <button type="button" class="btn btn-icon btn-secondary header-bell">
+      <button type="button" class="btn btn-icon btn-secondary header-bell" id="pushBell" title="Turn on alerts">
         @include('console.partials.icon', ['name' => 'bell'])
-        <span class="bell-dot"></span>
+        <span class="bell-dot" id="pushDot" style="display:none"></span>
       </button>
       <div style="display:flex;align-items:center;gap:10px">
         <div class="header-avatar">{{ ConsoleUi::initials($user->name) }}</div>
@@ -137,6 +137,84 @@ document.getElementById('sidebarToggle').addEventListener('click', () => {
 });
 const toast = document.getElementById('toast');
 if (toast) setTimeout(() => toast.remove(), 2400);
+</script>
+
+<script>
+(function () {
+  const bell = document.getElementById('pushBell');
+  const dot = document.getElementById('pushDot');
+  if (!bell) return;
+
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window;
+  const vapidKey = @json(config('webpush.vapid.public_key'));
+  const subscribeUrl = @json(route('console.push.subscribe'));
+  const csrf = @json(csrf_token());
+
+  if (!supported || !vapidKey) {
+    bell.style.display = 'none';
+    return;
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const output = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+    return output;
+  }
+
+  function paint(on) {
+    dot.style.display = 'block';
+    dot.style.background = on ? '#16a34a' : 'var(--color-accent)';
+    bell.title = on ? 'Alerts are on' : 'Turn on alerts';
+  }
+
+  async function ready() {
+    const reg = await navigator.serviceWorker.register(@json(asset('sw.js')));
+    await navigator.serviceWorker.ready;
+    return reg;
+  }
+
+  async function enable() {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { paint(false); return; }
+
+    const reg = await ready();
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+    }
+
+    await fetch(subscribeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+      body: JSON.stringify(sub.toJSON()),
+    });
+    paint(true);
+  }
+
+  bell.addEventListener('click', function () {
+    if (Notification.permission === 'denied') {
+      alert('Alerts are blocked for this site. Allow notifications in your browser settings, then try again.');
+      return;
+    }
+    enable().catch(() => paint(false));
+  });
+
+  // Already granted permission on a past visit: re-subscribe on load so the
+  // server always holds a current subscription without another bell click.
+  (async function init() {
+    if (Notification.permission === 'granted') {
+      enable().catch(() => paint(false));
+    } else {
+      paint(false);
+    }
+  })();
+})();
 </script>
 </body>
 </html>

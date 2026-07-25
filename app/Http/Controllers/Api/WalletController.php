@@ -8,6 +8,7 @@ use App\Models\PointPackage;
 use App\Models\WalletTopup;
 use App\Services\PesapalService;
 use App\Services\WalletService;
+use App\Support\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -71,6 +72,16 @@ class WalletController extends Controller
         ]);
 
         if ($data['payment_method'] === 'manual') {
+            $user = $request->user();
+
+            AdminNotifier::alert(
+                $user->country_id,
+                'topup_pending',
+                'Top-up awaiting approval',
+                $user->name . ' — ' . $package->points . ' points (' . $package->currency . ' ' . $package->price . ')',
+                route('console.wallet.index'),
+            );
+
             return response()->json([
                 'success' => true,
                 'data' => ['id' => $topup->id, 'status' => $topup->status->value],

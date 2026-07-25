@@ -95,7 +95,7 @@ class UserController extends Controller
             'reason' => ['required', 'string', 'max:255'],
         ]);
 
-        app(WalletService::class)->credit($user, $data['points'], $data['reason'], $this->grantRef());
+        app(WalletService::class)->grant($user, $data['points'], $data['reason'], $this->grantRef());
 
         return back()->with('toast', "{$data['points']} points granted to {$user->name}");
     }
@@ -117,7 +117,7 @@ class UserController extends Controller
         $wallet = app(WalletService::class);
 
         foreach ($members as $member) {
-            $wallet->credit($member, $data['points'], $data['reason'], $this->grantRef());
+            $wallet->grant($member, $data['points'], $data['reason'], $this->grantRef());
         }
 
         return back()->with('toast', "{$data['points']} points granted to {$members->count()} members");

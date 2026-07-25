@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Console;
 use App\Enums\SupportReportStatus;
 use App\Http\Controllers\Controller;
 use App\Models\SupportReport;
+use App\Notifications\KugawanaNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Enum;
@@ -57,7 +58,23 @@ class SupportReportController extends Controller
         $data['resolved_at'] = $closed ? ($report->resolved_at ?? now()) : null;
         $data['handled_by'] = $closed ? ($report->handled_by ?? auth()->id()) : $report->handled_by;
 
+        $originalResponse = $report->admin_response;
+
         $report->update($data);
+
+        // A member is only pinged when the admin actually writes back, not when a
+        // status-only edit re-saves the same response.
+        $reply = $data['admin_response'] ?? null;
+
+        if ($reply && $reply !== $originalResponse) {
+            $report->user?->notify(new KugawanaNotification(
+                'support.reply',
+                'Response to your report',
+                $reply,
+                'support',
+                $report->id,
+            ));
+        }
 
         return redirect()->route('console.support.reports.index')->with('toast', 'Report updated');
     }

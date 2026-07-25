@@ -7,6 +7,7 @@ use App\Models\Faq;
 use App\Models\SupportContact;
 use App\Models\SupportPage;
 use App\Models\SupportReport;
+use App\Support\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -70,11 +71,21 @@ class SupportController extends Controller
             'message' => ['required', 'string', 'max:2000'],
         ]);
 
-        SupportReport::create([
-            'user_id' => $request->user()->id,
+        $user = $request->user();
+
+        $report = SupportReport::create([
+            'user_id' => $user->id,
             'subject' => $data['subject'],
             'message' => $data['message'],
         ]);
+
+        AdminNotifier::alert(
+            $user->country_id,
+            'support_report',
+            'New support report',
+            $user->name . ': ' . $data['subject'],
+            route('console.support.reports.show', $report),
+        );
 
         return response()->json([
             'success' => true,

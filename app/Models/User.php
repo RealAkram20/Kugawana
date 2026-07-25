@@ -14,10 +14,11 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable;
+    use HasApiTokens, HasFactory, HasPushSubscriptions, MustVerifyEmailTrait, Notifiable;
 
     protected $fillable = [
         'name',

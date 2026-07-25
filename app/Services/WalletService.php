@@ -8,13 +8,14 @@ use App\Exceptions\InsufficientPointsException;
 use App\Models\User;
 use App\Models\WalletTopup;
 use App\Models\WalletTransaction;
+use App\Notifications\KugawanaNotification;
 use Illuminate\Support\Facades\DB;
 
 class WalletService
 {
     public function applyTopup(WalletTopup $topup, ?int $approverId = null): bool
     {
-        return DB::transaction(function () use ($topup, $approverId) {
+        $applied = DB::transaction(function () use ($topup, $approverId) {
             $locked = WalletTopup::lockForUpdate()->find($topup->id);
 
             if ($locked->status !== TopupStatus::Pending) {
@@ -31,6 +32,31 @@ class WalletService
 
             return true;
         });
+
+        // Told after the transaction commits so the push never holds the row lock
+        // open while it waits on Expo.
+        if ($applied) {
+            $topup->fresh()->user?->notify(new KugawanaNotification(
+                'topup.confirmed',
+                'Top-up confirmed',
+                $topup->points . ' points were added to your wallet.',
+                'wallet',
+            ));
+        }
+
+        return $applied;
+    }
+
+    public function grant(User $user, int $points, string $reason, ?string $reference = null): void
+    {
+        $this->credit($user, $points, $reason, $reference);
+
+        $user->notify(new KugawanaNotification(
+            'points.granted',
+            'Points added',
+            $points . ' points were added to your wallet.',
+            'wallet',
+        ));
     }
 
     public function deduct(User $user, int $points, string $reason, ?string $reference = null): void

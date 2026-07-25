@@ -97,7 +97,7 @@ class UserResource extends Resource
                             ->required(),
                     ])
                     ->action(function (User $record, array $data) {
-                        app(WalletService::class)->credit(
+                        app(WalletService::class)->grant(
                             $record,
                             (int) $data['points'],
                             $data['reason'],

@@ -13,6 +13,7 @@ use App\Http\Controllers\Console\MailSettingController;
 use App\Http\Controllers\Console\OrderController;
 use App\Http\Controllers\Console\PackageController;
 use App\Http\Controllers\Console\PaymentGatewayController;
+use App\Http\Controllers\Console\PushSubscriptionController;
 use App\Http\Controllers\Console\ReportController;
 use App\Http\Controllers\Console\SettingsController;
 use App\Http\Controllers\Console\SupportContactController;
@@ -43,6 +44,9 @@ Route::prefix('console')->name('console.')->group(function () {
 
     Route::middleware('console.admin')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+        Route::delete('/push/subscribe', [PushSubscriptionController::class, 'destroy'])->name('push.destroy');
 
         Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
         Route::get('/donations/export', [DonationController::class, 'export'])->name('donations.export');
