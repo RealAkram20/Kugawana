@@ -33,6 +33,12 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Firebase credentials — the service account key is a real secret, never
+# commit it. google-services.json IS committed on purpose: EAS Build refuses
+# to upload a googleServicesFile that isn't tracked in git, and the API key
+# inside it isn't a traditional secret (scoped to this app's package name).
+.secrets/
+
 # typescript
 *.tsbuildinfo
 

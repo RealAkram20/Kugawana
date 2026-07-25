@@ -20,3 +20,7 @@ web-build/
 # Local env (EAS reads env from eas.json, not these)
 .env
 .env*.local
+
+# Firebase service account key — only needed locally to upload via
+# `eas credentials`, never needed inside the app bundle itself
+.secrets/
