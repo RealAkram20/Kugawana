@@ -95,9 +95,11 @@ class UserController extends Controller
             'reason' => ['required', 'string', 'max:255'],
         ]);
 
-        app(WalletService::class)->grant($user, $data['points'], $data['reason'], $this->grantRef());
+        $granted = app(WalletService::class)->grant($user, $data['points'], $data['reason'], $this->grantRef());
 
-        return back()->with('toast', "{$data['points']} points granted to {$user->name}");
+        return back()->with('toast', $granted
+            ? "{$data['points']} points granted to {$user->name}"
+            : 'That grant was just submitted a moment ago — skipped the duplicate');
     }
 
     /** Reward the same points to a batch of members at once. */
@@ -116,11 +118,14 @@ class UserController extends Controller
 
         $wallet = app(WalletService::class);
 
+        $grantedCount = 0;
         foreach ($members as $member) {
-            $wallet->grant($member, $data['points'], $data['reason'], $this->grantRef());
+            if ($wallet->grant($member, $data['points'], $data['reason'], $this->grantRef())) {
+                $grantedCount++;
+            }
         }
 
-        return back()->with('toast', "{$data['points']} points granted to {$members->count()} members");
+        return back()->with('toast', "{$data['points']} points granted to {$grantedCount} members");
     }
 
     /** A reference that keeps each grant its own line in the ledger. */

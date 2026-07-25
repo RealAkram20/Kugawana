@@ -47,6 +47,8 @@ class WalletController extends Controller
 
     public function approve(WalletTopup $topup): RedirectResponse
     {
+        $this->guardScope($topup);
+
         $applied = app(WalletService::class)->applyTopup($topup, auth()->id());
 
         if (! $applied) {
@@ -58,16 +60,29 @@ class WalletController extends Controller
 
     public function reject(WalletTopup $topup): RedirectResponse
     {
-        if ($topup->status !== TopupStatus::Pending) {
+        $this->guardScope($topup);
+
+        $rejected = WalletTopup::query()
+            ->whereKey($topup->id)
+            ->where('status', TopupStatus::Pending)
+            ->update([
+                'status' => TopupStatus::Rejected,
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+            ]);
+
+        if (! $rejected) {
             return back()->with('toast', 'This request was already processed');
         }
 
-        $topup->update([
-            'status' => TopupStatus::Rejected,
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
-
         return back()->with('toast', "Request rejected for {$topup->user->name}");
+    }
+
+    /** A CountryAdmin may only act on top-up requests from their own country's users. */
+    private function guardScope(WalletTopup $topup): void
+    {
+        $countryId = $this->countryId();
+
+        abort_if($countryId && $topup->user?->country_id !== $countryId, 403);
     }
 }

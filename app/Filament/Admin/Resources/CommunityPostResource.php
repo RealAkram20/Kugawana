@@ -3,11 +3,13 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\PostStatus;
+use App\Enums\UserRole;
 use App\Filament\Admin\Resources\CommunityPostResource\Pages;
 use App\Models\CommunityPost;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CommunityPostResource extends Resource
 {
@@ -20,6 +22,17 @@ class CommunityPostResource extends Resource
     protected static ?string $navigationGroup = 'Content';
 
     protected static ?int $navigationSort = 2;
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->when(
+            auth()->user()->role === UserRole::CountryAdmin,
+            fn (Builder $query) => $query->whereHas(
+                'user',
+                fn (Builder $q) => $q->where('country_id', auth()->user()->country_id)
+            )
+        );
+    }
 
     public static function table(Table $table): Table
     {

@@ -31,7 +31,10 @@ class CountryStatsWidget extends StatsOverviewWidget
             Stat::make('Pending donations', (clone $donations)->where('status', FoodStatus::Pending)->count()),
             Stat::make('Active listings', (clone $donations)->published()->count()),
             Stat::make('Pending topups', $pendingTopups->count()),
-            Stat::make('Orders today', Order::whereDate('created_at', today())->count()),
+            Stat::make('Orders today', Order::query()
+                ->whereDate('created_at', today())
+                ->when($countryId, fn ($q) => $q->whereHas('foodDonation', fn ($f) => $f->where('country_id', $countryId)))
+                ->count()),
             Stat::make('Users', User::whereIn('role', [UserRole::Donor, UserRole::Receiver])
                 ->when($countryId, fn ($q) => $q->where('country_id', $countryId))
                 ->count()),

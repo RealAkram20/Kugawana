@@ -143,7 +143,19 @@ class AuthController extends Controller
         if ($user) {
             // First Google sign-in on an account that was created with a password
             if (! $user->google_id) {
-                $user->forceFill(['google_id' => $payload['sub']])->save();
+                $updates = ['google_id' => $payload['sub']];
+
+                // An unverified password account under this email could have been
+                // pre-registered by someone else before the real owner ever signed
+                // in. Google has now proven ownership of the address, so a password
+                // set before that proof can't be trusted — clear it so whoever set
+                // it loses access; the real owner can set a new one if they want
+                // password login too.
+                if (! $user->hasVerifiedEmail() && $user->password) {
+                    $updates['password'] = null;
+                }
+
+                $user->forceFill($updates)->save();
             }
         } else {
             $user = User::create([

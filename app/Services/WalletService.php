@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\WalletTopup;
 use App\Models\WalletTransaction;
 use App\Notifications\KugawanaNotification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class WalletService
@@ -47,8 +48,20 @@ class WalletService
         return $applied;
     }
 
-    public function grant(User $user, int $points, string $reason, ?string $reference = null): void
+    /**
+     * Manual admin-initiated grant. Returns false without applying anything
+     * if the same admin just made this exact grant to this user a moment
+     * ago — guards against a double-submitted form (double click, retried
+     * request) granting points twice.
+     */
+    public function grant(User $user, int $points, string $reason, ?string $reference = null): bool
     {
+        $lockKey = sprintf('wallet-grant:%d:%d:%s:%s', $user->id, $points, md5($reason), auth()->id() ?? 'system');
+
+        if (! Cache::add($lockKey, true, now()->addSeconds(5))) {
+            return false;
+        }
+
         $this->credit($user, $points, $reason, $reference);
 
         $user->notify(new KugawanaNotification(
@@ -57,6 +70,8 @@ class WalletService
             $points . ' points were added to your wallet.',
             'wallet',
         ));
+
+        return true;
     }
 
     public function deduct(User $user, int $points, string $reason, ?string $reference = null): void

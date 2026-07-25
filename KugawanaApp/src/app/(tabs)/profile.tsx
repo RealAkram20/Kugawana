@@ -21,6 +21,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { queryClient } from '../_layout'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { releasePushToken } from '../../hooks/usePushNotifications'
@@ -119,6 +120,9 @@ export default function ProfileScreen() {
           } catch {
           } finally {
             clear()
+            // Otherwise the next person to sign in on this device can briefly
+            // see this account's cached wallet balance, orders, and reviews.
+            queryClient.clear()
             router.replace('/(auth)/register')
           }
         },

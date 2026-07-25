@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Console;
 
 use App\Enums\SupportReportStatus;
+use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
 use App\Models\SupportReport;
 use App\Notifications\KugawanaNotification;
@@ -13,11 +14,20 @@ use Illuminate\View\View;
 
 class SupportReportController extends Controller
 {
+    use ScopesCountry;
+
+    private function scoped()
+    {
+        return SupportReport::query()
+            ->when($this->countryId(), fn ($q) => $q->whereHas('user', fn ($u) => $u->where('country_id', $this->countryId())));
+    }
+
     public function index(Request $request): View
     {
         $status = $request->string('status')->trim()->value();
 
-        $reports = SupportReport::with(['user', 'handler'])
+        $reports = $this->scoped()
+            ->with(['user', 'handler'])
             ->when($status, fn ($query) => $query->where('status', $status))
             ->latest()
             ->paginate(20)
@@ -27,7 +37,8 @@ class SupportReportController extends Controller
             'title' => 'Reported problems',
             'reports' => $reports,
             'status' => $status,
-            'counts' => SupportReport::selectRaw('status, count(*) as total')
+            'counts' => $this->scoped()
+                ->selectRaw('status, count(*) as total')
                 ->groupBy('status')
                 ->pluck('total', 'status'),
         ]);
@@ -35,14 +46,26 @@ class SupportReportController extends Controller
 
     public function show(SupportReport $report): View
     {
+        $this->guardScope($report);
+
         return view('console.support.reports.show', [
             'title' => 'Report #' . $report->id,
             'report' => $report->load(['user', 'handler']),
         ]);
     }
 
+    /** A CountryAdmin may only handle reports from their own country's users. */
+    private function guardScope(SupportReport $report): void
+    {
+        $countryId = $this->countryId();
+
+        abort_if($countryId && $report->user?->country_id !== $countryId, 403);
+    }
+
     public function update(Request $request, SupportReport $report): RedirectResponse
     {
+        $this->guardScope($report);
+
         $data = $request->validate([
             'status' => ['required', new Enum(SupportReportStatus::class)],
             'admin_response' => ['nullable', 'string', 'max:5000'],

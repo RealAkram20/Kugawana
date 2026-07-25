@@ -97,17 +97,22 @@ class UserResource extends Resource
                             ->required(),
                     ])
                     ->action(function (User $record, array $data) {
-                        app(WalletService::class)->grant(
+                        $granted = app(WalletService::class)->grant(
                             $record,
                             (int) $data['points'],
                             $data['reason'],
                             'grant:' . auth()->id() . ':' . now()->timestamp
                         );
 
-                        Notification::make()
-                            ->title($data['points'] . ' points granted to ' . $record->name)
-                            ->success()
-                            ->send();
+                        $granted
+                            ? Notification::make()
+                                ->title($data['points'] . ' points granted to ' . $record->name)
+                                ->success()
+                                ->send()
+                            : Notification::make()
+                                ->title('That grant was just submitted a moment ago — skipped the duplicate')
+                                ->warning()
+                                ->send();
                     }),
                 Tables\Actions\EditAction::make(),
             ])

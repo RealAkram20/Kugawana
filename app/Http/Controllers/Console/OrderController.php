@@ -79,6 +79,8 @@ class OrderController extends Controller
 
     public function accept(Order $order): RedirectResponse
     {
+        $this->guardScope($order);
+
         $order->update(['status' => OrderStatus::Accepted]);
 
         return back()->with('toast', "Order {$order->id} accepted");
@@ -86,6 +88,8 @@ class OrderController extends Controller
 
     public function deliver(Order $order): RedirectResponse
     {
+        $this->guardScope($order);
+
         $order->update([
             'status' => OrderStatus::Completed,
             'completed_at' => now(),
@@ -96,9 +100,19 @@ class OrderController extends Controller
 
     public function cancel(Order $order): RedirectResponse
     {
+        $this->guardScope($order);
+
         DB::transaction(fn () => $this->cancelOrder($order));
 
         return back()->with('toast', "Order {$order->id} cancelled and refunded");
+    }
+
+    /** A CountryAdmin may only act on orders for food donated in their own country. */
+    private function guardScope(Order $order): void
+    {
+        $countryId = $this->countryId();
+
+        abort_if($countryId && $order->foodDonation?->country_id !== $countryId, 403);
     }
 
     public function acceptGroup(string $group): RedirectResponse
@@ -146,24 +160,27 @@ class OrderController extends Controller
 
     /**
      * Cancels one line: refunds its points and returns its stock to the shelf.
-     * Assumed to run inside a transaction.
+     * Assumed to run inside a transaction. Locks and re-checks status itself so
+     * a double-click or two admins acting on the same order can't both refund it.
      */
     private function cancelOrder(Order $order): void
     {
-        if (! in_array($order->status, [OrderStatus::Pending, OrderStatus::Accepted], true)) {
+        $locked = Order::lockForUpdate()->find($order->id);
+
+        if (! in_array($locked->status, [OrderStatus::Pending, OrderStatus::Accepted], true)) {
             return;
         }
 
-        $order->update(['status' => OrderStatus::Cancelled]);
+        $locked->update(['status' => OrderStatus::Cancelled]);
 
-        if ($order->points_spent > 0) {
-            app(WalletService::class)->credit($order->receiver, $order->points_spent, 'order refund', (string) $order->id);
+        if ($locked->points_spent > 0) {
+            app(WalletService::class)->credit($locked->receiver, $locked->points_spent, 'order refund', (string) $locked->id);
         }
 
-        $food = $order->foodDonation;
+        $food = $locked->foodDonation;
 
         if ($food) {
-            app(FoodSplitService::class)->release($food, $order->units);
+            app(FoodSplitService::class)->release($food, $locked->units);
             app(FoodSplitService::class)->republishIfBackInStock($food);
         }
     }

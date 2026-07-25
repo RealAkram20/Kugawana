@@ -36,7 +36,13 @@ class WarehouseResource extends Resource
             Forms\Components\Section::make()->schema([
                 Forms\Components\TextInput::make('name')->required(),
                 Forms\Components\Select::make('country_id')
-                    ->relationship('country', 'name')
+                    ->relationship(
+                        'country',
+                        'name',
+                        modifyQueryUsing: fn (Builder $query) => auth()->user()->role === UserRole::CountryAdmin
+                            ? $query->where('id', auth()->user()->country_id)
+                            : $query
+                    )
                     ->default(fn () => auth()->user()->country_id)
                     ->required(),
                 Forms\Components\TextInput::make('district'),

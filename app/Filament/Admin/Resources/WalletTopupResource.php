@@ -104,11 +104,14 @@ class WalletTopupResource extends Resource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (WalletTopup $record) => $record->update([
-                        'status' => TopupStatus::Rejected,
-                        'approved_by' => auth()->id(),
-                        'approved_at' => now(),
-                    ]))
+                    ->action(fn (WalletTopup $record) => WalletTopup::query()
+                        ->whereKey($record->id)
+                        ->where('status', TopupStatus::Pending)
+                        ->update([
+                            'status' => TopupStatus::Rejected,
+                            'approved_by' => auth()->id(),
+                            'approved_at' => now(),
+                        ]))
                     ->visible(fn (WalletTopup $record) => $record->status === TopupStatus::Pending),
             ])
             ->defaultSort('created_at', 'desc');

@@ -8,7 +8,7 @@ import { CartSheet } from '../components/CartSheet'
 import i18n from '../locales/i18n'
 import { useAppStore } from '../stores/app.store'
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30_000 },
   },

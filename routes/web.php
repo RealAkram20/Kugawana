@@ -40,7 +40,7 @@ Route::get('/super-admin/{any?}', fn () => redirect()->route('console.login'))->
 
 Route::prefix('console')->name('console.')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth')->name('login.attempt');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::middleware('console.admin')->group(function () {

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { queryClient } from '../app/_layout'
 import { useAuthStore } from '../stores/auth.store'
 
 export const api = axios.create({
@@ -18,6 +19,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().clear()
+      queryClient.clear()
     }
     return Promise.reject(error)
   }

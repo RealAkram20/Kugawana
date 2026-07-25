@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\SupportReportStatus;
+use App\Enums\UserRole;
 use App\Filament\Admin\Resources\SupportReportResource\Pages;
 use App\Models\SupportReport;
 use Filament\Forms;
@@ -10,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class SupportReportResource extends Resource
 {
@@ -25,10 +27,21 @@ class SupportReportResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->when(
+            auth()->user()->role === UserRole::CountryAdmin,
+            fn (Builder $query) => $query->whereHas(
+                'user',
+                fn (Builder $q) => $q->where('country_id', auth()->user()->country_id)
+            )
+        );
+    }
+
     /** Nudge admins toward the queue when something is waiting. */
     public static function getNavigationBadge(): ?string
     {
-        $open = static::getModel()::where('status', SupportReportStatus::New)->count();
+        $open = static::getEloquentQuery()->where('status', SupportReportStatus::New)->count();
 
         return $open > 0 ? (string) $open : null;
     }

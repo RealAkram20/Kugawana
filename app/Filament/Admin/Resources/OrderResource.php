@@ -100,13 +100,19 @@ class OrderResource extends Resource
                     ->requiresConfirmation()
                     ->action(function (Order $record) {
                         DB::transaction(function () use ($record) {
-                            $record->update(['status' => OrderStatus::Cancelled]);
-                            if ($record->points_spent > 0) {
+                            $locked = Order::lockForUpdate()->find($record->id);
+
+                            if (! in_array($locked->status, [OrderStatus::Pending, OrderStatus::Accepted], true)) {
+                                return;
+                            }
+
+                            $locked->update(['status' => OrderStatus::Cancelled]);
+                            if ($locked->points_spent > 0) {
                                 app(WalletService::class)->credit(
-                                    $record->receiver,
-                                    $record->points_spent,
+                                    $locked->receiver,
+                                    $locked->points_spent,
                                     'order refund',
-                                    (string) $record->id
+                                    (string) $locked->id
                                 );
                             }
                         });

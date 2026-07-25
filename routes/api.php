@@ -14,10 +14,13 @@ use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/google', [AuthController::class, 'google']);
-Route::post('/auth/email/resend', [AuthController::class, 'resendVerification']);
+Route::middleware('throttle:auth')->group(function () {
+    Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/google', [AuthController::class, 'google']);
+});
+Route::post('/auth/email/resend', [AuthController::class, 'resendVerification'])
+    ->middleware('throttle:email-verification');
 
 Route::get('/wallet/pesapal/callback', [WalletController::class, 'pesapalCallback']);
 Route::get('/wallet/pesapal/ipn', [WalletController::class, 'pesapalIpn']);
