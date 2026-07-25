@@ -33,9 +33,14 @@ return [
     'database_connection' => env('WEBPUSH_DB_CONNECTION', env('DB_CONNECTION', 'mysql')),
 
     /**
-     * The Guzzle client options used by Minishlink\WebPush.
+     * The Guzzle client options used by Minishlink\WebPush. On hosts where PHP
+     * ships no CA bundle (XAMPP on Windows), point `verify` at one via
+     * WEBPUSH_CA_BUNDLE so TLS to the push service can be verified. Left unset on
+     * Linux, where the system bundle is found automatically.
      */
-    'client_options' => [],
+    'client_options' => array_filter([
+        'verify' => env('WEBPUSH_CA_BUNDLE'),
+    ]),
 
     /**
      * The automatic padding in bytes used by Minishlink\WebPush.
