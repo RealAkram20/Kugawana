@@ -7,13 +7,12 @@
     RewriteRule ^(build|css|js|images|fonts|vendor)/(.*)$ public/$1/$2 [L]
     RewriteRule ^(favicon\.ico|robots\.txt|sw\.js)$ public/$1 [L]
 
-    # Only take this fast path where public/storage actually exists (a real
-    # symlink, e.g. local dev). Hosts that disable PHP's symlink() function
-    # (e.g. Hostinger shared hosting) never get this file, so the request
-    # falls through to index.php, where a dedicated route in web.php serves
-    # the public disk directly.
-    RewriteCond %{DOCUMENT_ROOT}/public/storage -d
-    RewriteRule ^storage/(.*)$ public/storage/$1 [L]
+    # public/media is a symlink to storage/app/public (see config/filesystems.php).
+    # Named "media", not "storage" — on the production layout the real Laravel
+    # storage/ directory already sits at that name at the top level, so
+    # "storage" isn't free to reuse as the symlink name there.
+    RewriteCond %{DOCUMENT_ROOT}/public/media -d
+    RewriteRule ^media/(.*)$ public/media/$1 [L]
 
     RewriteCond %{REQUEST_URI} !/public/
     RewriteRule ^(.*)$ index.php [L]

@@ -22,7 +22,7 @@ class MediaUrl
             return $path;
         }
 
-        return asset('storage/' . ltrim($path, '/'));
+        return asset('media/' . ltrim($path, '/'));
     }
 
     /** @param  array<int, string>|null  $paths */

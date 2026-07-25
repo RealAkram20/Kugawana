@@ -48,7 +48,14 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // Not /storage: some hosts (Hostinger's edge included) fast-path any
+            // request ending in a recognized static extension (.jpg, .png, ...)
+            // straight to a literal filesystem lookup, bypassing .htaccess/PHP
+            // entirely — so a nested /storage/{path} can never reach a Laravel
+            // route, only a real file at that exact path. /media is a plain
+            // symlink (public_path('media') -> storage/app/public) so those
+            // requests resolve as real files with no app involvement at all.
+            'url' => env('APP_URL').'/media',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -81,7 +88,7 @@ return [
     */
 
     'links' => [
-        public_path('storage') => storage_path('app/public'),
+        public_path('media') => storage_path('app/public'),
     ],
 
 ];
