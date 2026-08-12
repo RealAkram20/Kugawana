@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\MailSetting;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
@@ -27,6 +29,8 @@ class MailConfig
         $setting = MailSetting::current();
 
         if (! $setting->isSmtpConfigured()) {
+            self::warnUnconfigured();
+
             return;
         }
 
@@ -49,5 +53,30 @@ class MailConfig
                 'mail.from.name' => $setting->from_name ?: config('app.name'),
             ]);
         }
+    }
+
+    /**
+     * With no SMTP host saved, the mailer stays on whatever .env holds — which
+     * ships as `log`. Password reset codes and verification links would then be
+     * written to storage/logs and never delivered, while every screen still
+     * reports success. Say so loudly, throttled so it cannot flood the log.
+     */
+    private static function warnUnconfigured(): void
+    {
+        if (app()->environment('local', 'testing') || app()->runningUnitTests()) {
+            return;
+        }
+
+        try {
+            if (! Cache::add('mail-unconfigured-warned', true, now()->addMinutes(15))) {
+                return;
+            }
+        } catch (Throwable) {
+            // No cache store available — warn anyway rather than stay silent.
+        }
+
+        Log::warning('SMTP is not configured: mail is going to the "' . config('mail.default')
+            . '" mailer, so password reset codes and verification emails are NOT being delivered. '
+            . 'Fill in every field under console Settings > Email.');
     }
 }

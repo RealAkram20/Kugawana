@@ -33,7 +33,23 @@ self.addEventListener('push', function (event) {
 self.addEventListener('notificationclick', function (event) {
   event.notification.close()
 
-  var target = (event.notification.data && event.notification.data.url) || '/Kugawana/console'
+  var fallback = '/Kugawana/console'
+  var requested = (event.notification.data && event.notification.data.url) || fallback
+
+  // Notification payloads are built inside member-controlled requests, so an
+  // absolute URL here could point anywhere. Only same-origin targets are
+  // followed; anything else falls back to the console.
+  var target = fallback
+
+  try {
+    var resolved = new URL(requested, self.location.origin)
+
+    if (resolved.origin === self.location.origin) {
+      target = resolved.href
+    }
+  } catch (e) {
+    // Unparseable URL — keep the fallback.
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {

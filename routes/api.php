@@ -55,7 +55,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/wallet', [WalletController::class, 'index']);
     Route::get('/wallet/packages', [WalletController::class, 'packages']);
-    Route::get('/wallet/topup/{topup}/status', [WalletController::class, 'topupStatus']);
+    // Each poll makes an outbound Pesapal call, so it gets its own ceiling.
+    Route::get('/wallet/topup/{topup}/status', [WalletController::class, 'topupStatus'])
+        ->middleware('throttle:60,1');
 
     Route::get('/community', [CommunityController::class, 'index']);
     Route::get('/community/{post}', [CommunityController::class, 'show']);
@@ -76,7 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
         Route::post('/orders/{order}/rate', [RatingController::class, 'store']);
 
-        Route::post('/wallet/topup', [WalletController::class, 'topup']);
+        // Rate limited so nobody can flood admins with pending requests, which
+        // raises the odds of a careless approval.
+        Route::post('/wallet/topup', [WalletController::class, 'topup'])
+            ->middleware('throttle:10,1');
 
         Route::post('/community', [CommunityController::class, 'store']);
         Route::post('/community/{post}/like', [CommunityController::class, 'like']);

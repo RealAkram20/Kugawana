@@ -145,7 +145,11 @@ class WalletController extends Controller
                             'result' => $result,
                         ]);
                     }
-                } elseif ($result['status'] === 'FAILED' || $result['status'] === 'INVALID') {
+                } elseif (in_array($result['status'], ['FAILED', 'INVALID', 'REVERSED'], true)) {
+                    // REVERSED is a refund/chargeback. While still pending that
+                    // simply means no points; an already-approved reversal is a
+                    // clawback an admin has to settle, so it is logged instead
+                    // of silently leaving the points in place.
                     $topup->update(['status' => TopupStatus::Rejected]);
                 }
             } catch (\Throwable $e) {
@@ -171,19 +175,33 @@ class WalletController extends Controller
         $trackingId = $request->query('OrderTrackingId');
         $topup = WalletTopup::where('order_tracking_id', $trackingId)->first();
 
-        if ($topup && $topup->status === TopupStatus::Pending && $pesapal->isConfigured()) {
+        if ($topup && $pesapal->isConfigured()) {
             try {
                 $result = $pesapal->transactionStatus($trackingId);
 
-                if ($result['status'] === 'COMPLETED'
-                    && $pesapal->matches($topup, $result)
-                    && $pesapal->mayCredit()) {
-                    $wallet->applyTopup($topup);
-                } elseif ($result['status'] === 'COMPLETED') {
-                    Log::warning('Pesapal IPN settlement not creditable', [
+                if ($topup->status === TopupStatus::Pending) {
+                    if ($result['status'] === 'COMPLETED'
+                        && $pesapal->matches($topup, $result)
+                        && $pesapal->mayCredit()) {
+                        $wallet->applyTopup($topup);
+                    } elseif ($result['status'] === 'COMPLETED') {
+                        Log::warning('Pesapal IPN settlement not creditable', [
+                            'topup' => $topup->id,
+                            'live' => $pesapal->isLive(),
+                            'result' => $result,
+                        ]);
+                    } elseif (in_array($result['status'], ['FAILED', 'INVALID', 'REVERSED'], true)) {
+                        $topup->update(['status' => TopupStatus::Rejected]);
+                    }
+                } elseif ($result['status'] === 'REVERSED' && $topup->status === TopupStatus::Approved) {
+                    // The money went back to the payer after we credited. Points
+                    // cannot be pulled automatically — the member may have spent
+                    // them — so this is surfaced for an admin to reconcile.
+                    Log::critical('Pesapal payment reversed after points were credited', [
                         'topup' => $topup->id,
-                        'live' => $pesapal->isLive(),
-                        'result' => $result,
+                        'user' => $topup->user_id,
+                        'points' => $topup->points,
+                        'amount' => $topup->amount,
                     ]);
                 }
             } catch (\Throwable $e) {

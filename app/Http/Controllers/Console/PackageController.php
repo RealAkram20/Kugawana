@@ -70,7 +70,8 @@ class PackageController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'points' => ['required', 'integer', 'min:1', 'max:10000000'],
-            'price' => ['required', 'numeric', 'min:0', 'max:100000000'],
+            // Never free: a zero-priced bundle mints points for nothing.
+            'price' => ['required', 'numeric', 'min:1', 'max:100000000'],
             'currency' => ['required', 'string', 'size:3'],
             'country_id' => ['nullable', 'exists:countries,id'],
             'is_active' => ['nullable', 'boolean'],
