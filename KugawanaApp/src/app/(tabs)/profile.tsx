@@ -51,6 +51,7 @@ const languages: { code: Language; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'sw', label: 'Kiswahili' },
   { code: 'fr', label: 'Français' },
+  { code: 'ar', label: 'العربية' },
 ]
 
 export default function ProfileScreen() {

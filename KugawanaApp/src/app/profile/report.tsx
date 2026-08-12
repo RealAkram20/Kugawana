@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { supportService } from '../../services/support.service'
@@ -22,6 +24,7 @@ const MESSAGE_MAX = 2000
 
 export default function ReportProblemScreen() {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
 
@@ -48,8 +51,14 @@ export default function ReportProblemScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: t('profile.reportProblem') }} />
 
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.intro}>{t('help.reportIntro')}</Text>
 
           <Text style={styles.label}>{t('help.reportSubject')}</Text>

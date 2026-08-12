@@ -54,9 +54,16 @@ use App\Support\ConsoleUi;
 
 <h5 style="margin:0 0 12px">Top up requests</h5>
 
+@if ($pesapalSandbox)
+  <div class="panel" style="margin-bottom:12px;border-left:4px solid var(--color-accent);padding:10px 14px">
+    <strong>Pesapal is in SANDBOX mode.</strong>
+    <span class="text-muted">Payments made now are test money and will not be credited. Switch to Live in Settings → Pesapal before taking real payments.</span>
+  </div>
+@endif
+
 <div class="panel-table">
   <table class="table">
-    <thead><tr><th>Request</th><th>User</th><th>Points</th><th>Amount</th><th>Method</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Request</th><th>User</th><th>Points</th><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th><th></th></tr></thead>
     <tbody>
       @forelse ($requests as $w)
         <tr>
@@ -65,6 +72,7 @@ use App\Support\ConsoleUi;
           <td>{{ number_format($w->points) }}{{ $w->pointPackage ? ' · ' . $w->pointPackage->name : '' }}</td>
           <td>{{ $w->currency }} {{ number_format((float) $w->amount) }}</td>
           <td>{{ ucfirst($w->payment_method) }}</td>
+          <td style="color:var(--color-neutral-600);font-size:12px">{{ $w->payment_reference ?: ($w->order_tracking_id ? substr($w->order_tracking_id, 0, 13) . '…' : '—') }}</td>
           <td><span class="tag {{ ConsoleUi::tagClass($w->status->value) }}">{{ $w->status->getLabel() }}</span></td>
           <td style="text-align:right;white-space:nowrap">
             @if ($w->status === TopupStatus::Pending)
@@ -80,7 +88,7 @@ use App\Support\ConsoleUi;
           </td>
         </tr>
       @empty
-        <tr><td colspan="7" class="text-muted">No wallet requests yet</td></tr>
+        <tr><td colspan="8" class="text-muted">No wallet requests yet</td></tr>
       @endforelse
     </tbody>
   </table>

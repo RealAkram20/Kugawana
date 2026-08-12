@@ -95,29 +95,51 @@ class OrderController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($order, $wallet, $splitter) {
-            $order->update(['status' => OrderStatus::Cancelled]);
+        // The status check above is only a fast, friendly rejection. The real
+        // guard is here: the row is locked and re-checked inside the transaction
+        // so two simultaneous cancels can't both refund the same order.
+        $cancelled = DB::transaction(function () use ($order, $wallet, $splitter): bool {
+            $locked = Order::whereKey($order->id)
+                ->whereIn('status', [OrderStatus::Pending, OrderStatus::Accepted])
+                ->lockForUpdate()
+                ->first();
 
-            if ($order->points_spent > 0) {
-                $wallet->credit($order->receiver, $order->points_spent, 'order refund', (string) $order->id);
+            if (! $locked) {
+                return false;
+            }
+
+            $locked->update(['status' => OrderStatus::Cancelled]);
+
+            if ($locked->points_spent > 0) {
+                $wallet->credit($locked->receiver, $locked->points_spent, 'order refund', (string) $locked->id);
             }
 
             // store() takes the units off the shelf and reserves the listing;
             // both are undone here so the food stays available to others.
-            $food = $order->foodDonation;
+            $food = $locked->foodDonation;
 
             if (! $food) {
-                return;
+                return true;
             }
 
-            $splitter->release($food, $order->units);
+            $splitter->release($food, $locked->units);
 
             if ($food->isSplit()) {
                 $splitter->republishIfBackInStock($food);
             } elseif ($food->status === FoodStatus::Reserved) {
                 $food->update(['status' => FoodStatus::Published]);
             }
+
+            return true;
         });
+
+        if (! $cancelled) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'This request can no longer be cancelled.',
+            ], 422);
+        }
 
         $this->notifyDonor(
             $order,

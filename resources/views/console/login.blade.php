@@ -1,15 +1,21 @@
+@php $branding = App\Models\BrandingSetting::current(); @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in · Kugawana</title>
+<link rel="icon" href="{{ $branding->faviconUrl() }}">
 <link rel="stylesheet" href="{{ asset('css/console.css') }}">
 </head>
 <body>
 <div class="login-split">
   <div class="login-hero">
-    <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;letter-spacing:0.02em">KUGAWANA</div>
+    @if ($branding->logoUrl())
+      <img src="{{ $branding->logoUrl() }}" alt="Kugawana" style="max-height:44px;max-width:220px;object-fit:contain;object-position:left">
+    @else
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;letter-spacing:0.02em">KUGAWANA</div>
+    @endif
     <div>
       <div style="font-size:12px;letter-spacing:0.16em;text-transform:uppercase;opacity:.82;margin-bottom:18px">Admin console</div>
       <h1>Reduce food waste. Feed the community.</h1>
@@ -20,6 +26,11 @@
   <div class="login-form">
     <h2 style="margin:0 0 4px">Sign in</h2>
     <p class="text-muted" style="margin-bottom:32px">Admin access only</p>
+
+    @if (session('status'))
+      <div class="text-muted" style="margin-bottom:24px;font-size:13px;line-height:1.5">{{ session('status') }}</div>
+    @endif
+
     <form method="POST" action="{{ route('console.login.attempt') }}">
       @csrf
       <div class="field" style="margin-bottom:16px">
@@ -27,16 +38,19 @@
         <input class="input" type="email" name="email" value="{{ old('email') }}" required autofocus>
       </div>
       <div class="field" style="margin-bottom:28px">
-        <label>Password</label>
-        <input class="input" type="password" name="password" required>
+        <label for="password">Password</label>
+        <div class="password-field">
+          <input class="input" id="password" type="password" name="password" required>
+        </div>
       </div>
       @error('email')
         <div class="error-text" style="margin-bottom:16px">{{ $message }}</div>
       @enderror
       <button type="submit" class="btn btn-primary" style="justify-content:center;padding:12px;width:100%">Sign in</button>
     </form>
-    <div class="text-muted" style="margin-top:18px;font-size:13px">Forgot password</div>
+    <div style="margin-top:18px;font-size:13px"><a href="{{ route('password.request') }}">Forgot password</a></div>
   </div>
 </div>
+<script src="{{ asset('js/password-toggle.js') }}"></script>
 </body>
 </html>

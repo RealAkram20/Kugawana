@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Alert,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PhotoPicker } from '../../components/food/PhotoPicker'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
@@ -31,6 +32,7 @@ const TYPES: { key: PostType; Icon: typeof ShoppingBag }[] = [
 
 export default function CreatePostScreen() {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
 
   const [type, setType] = useState<PostType>('request')
@@ -89,7 +91,7 @@ export default function CreatePostScreen() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('createPost.postType')}</Text>
           <View style={styles.typeRow}>
@@ -170,7 +172,7 @@ export default function CreatePostScreen() {
           />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           <Pressable
             onPress={submit}
             disabled={post.isPending}

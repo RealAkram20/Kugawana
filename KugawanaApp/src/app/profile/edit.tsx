@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CartButton } from '../../components/CartButton'
 import { UseMyLocationButton } from '../../components/UseMyLocationButton'
 import { colors } from '../../constants/colors'
@@ -30,6 +32,31 @@ export default function EditProfileScreen() {
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
+  const clear = useAuthStore((state) => state.clear)
+  const insets = useSafeAreaInsets()
+  const [deleting, setDeleting] = useState(false)
+
+  const confirmDelete = () => {
+    Alert.alert(t('editProfile.deleteTitle'), t('editProfile.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('editProfile.deleteConfirm'),
+        style: 'destructive',
+        onPress: async () => {
+          setDeleting(true)
+          try {
+            await authService.deleteAccount()
+            clear()
+            router.replace('/(auth)/register')
+          } catch {
+            Alert.alert(t('common.appName'), t('editProfile.deleteFailed'))
+          } finally {
+            setDeleting(false)
+          }
+        },
+      },
+    ])
+  }
 
   const [name, setName] = useState(user?.name ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
@@ -132,7 +159,7 @@ export default function EditProfileScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: t('profile.editProfile'), headerRight: () => <CartButton /> }} />
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.avatarBlock}>
             <Pressable onPress={pickPhoto} style={styles.avatarWrap} accessibilityRole="button">
@@ -211,9 +238,18 @@ export default function EditProfileScreen() {
             maxLength={500}
           />
           <Text style={styles.counter}>{bio.length}/500</Text>
+
+          <Pressable style={styles.deleteRow} onPress={confirmDelete} disabled={deleting}>
+            {deleting ? (
+              <ActivityIndicator color={colors.error} />
+            ) : (
+              <Text style={styles.deleteLabel}>{t('editProfile.deleteAccount')}</Text>
+            )}
+          </Pressable>
+          <Text style={styles.deleteHint}>{t('editProfile.deleteHint')}</Text>
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           <Pressable
             disabled={save.isPending}
             style={({ pressed }) => [styles.saveBtn, pressed && styles.pressed, save.isPending && styles.disabled]}
@@ -345,6 +381,26 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     fontSize: 13,
     color: colors.textMuted,
+  },
+  deleteRow: {
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xl,
+  },
+  deleteLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.error,
+  },
+  deleteHint: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
   footer: {
     paddingHorizontal: spacing.md,

@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CartButton } from '../../../components/CartButton'
 import { colors } from '../../../constants/colors'
 import { spacing } from '../../../constants/spacing'
@@ -22,6 +24,7 @@ export default function EditRequestScreen() {
   const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
   const orderId = Number(id)
 
   const { data: order } = useQuery({
@@ -66,7 +69,7 @@ export default function EditRequestScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: t('requestDetail.editRequest'), headerRight: () => <CartButton /> }} />
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('requestDetail.preferredQuantity')}</Text>
           <TextInput
@@ -89,7 +92,7 @@ export default function EditRequestScreen() {
           />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           <Pressable
             disabled={save.isPending}
             style={({ pressed }) => [styles.saveBtn, pressed && styles.pressed, save.isPending && styles.disabled]}

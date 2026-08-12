@@ -44,6 +44,9 @@
     "googleComingSoon": "La connexion Google arrive bientôt",
     "googleNotConfigured": "La connexion Google n'est pas encore configurée sur cette version.",
     "googleFailed": "Impossible de se connecter avec Google. Veuillez réessayer.",
+    "phoneCompletionTitle": "Ajoutez votre numéro de téléphone",
+    "phoneCompletionSubtitle": "Nous avons besoin d'un numéro de téléphone pour que les donateurs et notre équipe puissent vous joindre au sujet de vos commandes.",
+    "phoneCompletionFailed": "Impossible d'enregistrer votre numéro. Veuillez réessayer.",
     "verifyTitle": "Vérifiez votre e-mail",
     "verifyResend": "Renvoyer le lien",
     "verifyResent": "Nous avons envoyé un nouveau lien de vérification à votre e-mail.",
@@ -466,7 +469,13 @@
     "bioPlaceholder": "Présentez-vous brièvement à la communauté",
     "saved": "Profil mis à jour.",
     "saveFailed": "Impossible d’enregistrer votre profil. Veuillez réessayer.",
-    "nameRequired": "Veuillez saisir votre nom."
+    "nameRequired": "Veuillez saisir votre nom.",
+    "deleteAccount": "Supprimer le compte",
+    "deleteTitle": "Supprimer votre compte ?",
+    "deleteBody": "Votre profil, votre téléphone et vos accès seront définitivement supprimés. L'historique des commandes et des points est conservé sans votre nom pour la comptabilité. Cette action est irréversible.",
+    "deleteConfirm": "Supprimer",
+    "deleteFailed": "Impossible de supprimer le compte. Réessayez.",
+    "deleteHint": "La suppression efface définitivement vos informations personnelles."
   },
   "login": {
     "title": "Bon retour",
@@ -493,5 +502,25 @@
     "title": "Notifications",
     "markAllRead": "Tout marquer comme lu",
     "empty": "Aucune notification pour le moment."
+  },
+  "forgot": {
+    "title": "Réinitialiser le mot de passe",
+    "subtitle": "Entrez l'email de votre compte et nous vous enverrons un code à 6 chiffres.",
+    "resetSubtitle": "Entrez le code envoyé à {{email}} et choisissez un nouveau mot de passe.",
+    "email": "Email",
+    "emailPlaceholder": "vous@exemple.com",
+    "invalidEmail": "Entrez une adresse email valide",
+    "codeSent": "Si cet email correspond à un compte, un code de réinitialisation est en route.",
+    "code": "Code de réinitialisation",
+    "codePlaceholder": "Code à 6 chiffres",
+    "invalidCode": "Entrez le code à 6 chiffres reçu par email",
+    "newPassword": "Nouveau mot de passe",
+    "newPasswordPlaceholder": "Au moins 8 caractères",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+    "resend": "Envoyer un nouveau code",
+    "sendCode": "Envoyer le code",
+    "resetButton": "Réinitialiser",
+    "success": "Mot de passe mis à jour — connectez-vous avec le nouveau.",
+    "failed": "Une erreur est survenue. Réessayez."
   }
 }

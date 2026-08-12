@@ -82,6 +82,14 @@ class NotificationController extends Controller
             'platform' => ['nullable', 'string', 'max:16'],
         ]);
 
+        // Tokens are unique per device, so a token already held by someone else
+        // means the handset changed hands. Drop the old row rather than moving
+        // it, so the previous owner's pending notifications never follow the
+        // token to its new account.
+        PushToken::where('token', $data['token'])
+            ->where('user_id', '!=', $request->user()->id)
+            ->delete();
+
         PushToken::updateOrCreate(
             ['token' => $data['token']],
             ['user_id' => $request->user()->id, 'platform' => $data['platform'] ?? null],

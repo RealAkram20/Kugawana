@@ -1,5 +1,6 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import ar from './ar.json'
 import en from './en.json'
 import fr from './fr.json'
 import sw from './sw.json'
@@ -9,6 +10,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     sw: { translation: sw },
     fr: { translation: fr },
+    ar: { translation: ar },
   },
   lng: 'en',
   fallbackLng: 'en',

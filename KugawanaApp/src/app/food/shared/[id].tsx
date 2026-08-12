@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronRight, Clock, Lock, MapPin } from 'lucide-react-nativ
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PhotoGallery } from '../../../components/food/PhotoGallery'
 import { colors } from '../../../constants/colors'
 import { availableUntilParts } from '../../../constants/datetime'
 import { statusLabelKey } from '../../../constants/foodStatus'
@@ -80,8 +81,10 @@ export default function SharedFoodDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {food.images[0] ? (
-          <Image source={food.images[0]} style={styles.hero} contentFit="cover" transition={150} />
+        {food.images.length > 0 ? (
+          <View style={styles.gallery}>
+            <PhotoGallery images={food.images} height={200} borderRadius={12} />
+          </View>
         ) : (
           <View style={[styles.hero, styles.heroFallback]}>
             <Text style={styles.heroFallbackText}>{food.title.slice(0, 1).toUpperCase()}</Text>
@@ -252,6 +255,9 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.lg,
+  },
+  gallery: {
+    marginTop: spacing.sm,
   },
   hero: {
     width: '100%',

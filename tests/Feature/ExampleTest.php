@@ -2,18 +2,18 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * There is no public landing page: the root URL belongs to the admin
+     * console, which sends anyone who is not signed in to its login screen.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_the_root_url_sends_visitors_to_the_console_login(): void
     {
-        $response = $this->get('/');
+        $this->get('/console')->assertRedirect(route('console.login'));
 
-        $response->assertStatus(200);
+        $this->get('/console/login')->assertOk();
     }
 }

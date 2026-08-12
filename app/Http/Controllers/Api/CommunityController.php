@@ -57,6 +57,8 @@ class CommunityController extends Controller
 
     public function show(Request $request, CommunityPost $post): JsonResponse
     {
+        $this->assertVisible($post);
+
         // Only thread starters load with the post. Replies stay behind their
         // "View N replies" row so a post with a long argument under one comment
         // does not drag the whole screen down with it.
@@ -87,9 +89,21 @@ class CommunityController extends Controller
         ]);
     }
 
+    /**
+     * A post an admin has hidden is gone for everyone: the feed already filters
+     * it out, so the by-id routes must too or moderation only hides it from
+     * people who were not already looking at it.
+     */
+    private function assertVisible(CommunityPost $post): void
+    {
+        abort_unless($post->status === PostStatus::Published, 404);
+    }
+
     /** The replies under one comment, fetched when the thread is expanded. */
     public function replies(CommunityPost $post, CommunityComment $comment): JsonResponse
     {
+        $this->assertVisible($post);
+
         abort_if($comment->community_post_id !== $post->id, 404);
 
         $replies = $comment->replies()->with('user')->oldest()->get();
@@ -103,6 +117,8 @@ class CommunityController extends Controller
 
     public function comment(Request $request, CommunityPost $post): JsonResponse
     {
+        $this->assertVisible($post);
+
         $data = $request->validate([
             'content' => ['required', 'string', 'max:2000'],
             'parent_id' => ['nullable', 'integer', 'exists:community_comments,id'],
@@ -216,6 +232,8 @@ class CommunityController extends Controller
 
     public function like(Request $request, CommunityPost $post): JsonResponse
     {
+        $this->assertVisible($post);
+
         $existing = CommunityLike::where('community_post_id', $post->id)
             ->where('user_id', $request->user()->id)
             ->first();

@@ -8,7 +8,6 @@ use App\Http\Resources\FoodResource;
 use App\Models\FoodCategory;
 use App\Models\FoodDonation;
 use App\Models\Unit;
-use App\Services\RewardService;
 use App\Support\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,9 +54,21 @@ class FoodController extends Controller
 
     public function show(Request $request, FoodDonation $food): JsonResponse
     {
+        $isOwner = $request->user()?->id === $food->donor_id;
+
+        // Listings that never reached the feed are not public: before approval
+        // they carry the donor's pickup address and photos for food that may yet
+        // be rejected. The donor always sees their own, and so does anyone who
+        // already has a request against it.
+        $onFeed = in_array($food->status, [FoodStatus::Published, FoodStatus::Reserved], true);
+        $ordered = ! $isOwner && ! $onFeed
+            && $food->orders()->where('receiver_id', $request->user()?->id)->exists();
+
+        abort_unless($onFeed || $isOwner || $ordered, 404);
+
         $food->load(['category', 'donor', 'unit']);
 
-        if ($request->user()?->id === $food->donor_id) {
+        if ($isOwner) {
             $food->load('orders.receiver');
         }
 
@@ -118,7 +129,9 @@ class FoodController extends Controller
         $food->update(['status' => FoodStatus::Completed]);
         $food->load(['category', 'donor', 'unit', 'orders.receiver']);
 
-        app(RewardService::class)->award($request->user(), 'donation', 'donation:' . $food->id);
+        // No reward here: donorCanManage() means the listing was never
+        // approved, so nothing verifiably changed hands. Donation campaigns
+        // pay from the console approve() instead.
 
         return response()->json([
             'success' => true,

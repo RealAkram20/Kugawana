@@ -35,8 +35,10 @@
       </div>
       <div class="field">
         <label>Password</label>
-        <input class="input" type="password" name="smtp_password" autocomplete="new-password"
-               placeholder="{{ $hasPassword ? '•••••••• (saved — leave blank to keep)' : 'App password or SMTP password' }}">
+        <div class="password-field">
+          <input class="input" type="password" name="smtp_password" autocomplete="new-password"
+                 placeholder="{{ $hasPassword ? '•••••••• (saved — leave blank to keep)' : 'App password or SMTP password' }}">
+        </div>
         <p class="text-muted" style="font-size:12px;margin:6px 0 0">Stored encrypted. Leave blank to keep the current one.</p>
         @error('smtp_password')<p class="error-text" style="margin:6px 0 0">{{ $message }}</p>@enderror
       </div>

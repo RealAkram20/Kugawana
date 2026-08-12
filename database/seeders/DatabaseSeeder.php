@@ -101,6 +101,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // Help & Support content — all of it editable from the admin panel.
+        $this->call(CountrySeeder::class);
         $this->call(SupportSeeder::class);
 
         // Demo listings, articles, posts and photos for the mobile app.

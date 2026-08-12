@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CategoryPill } from '../../../components/food/CategoryPill'
 import { PhotoPicker } from '../../../components/food/PhotoPicker'
 import { CartButton } from '../../../components/CartButton'
@@ -26,6 +28,7 @@ export default function EditDonationScreen() {
   const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
   const foodId = Number(id)
 
   const { data: food } = useQuery({
@@ -107,7 +110,7 @@ export default function EditDonationScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: t('sharedFood.edit'), headerRight: () => <CartButton /> }} />
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('share.foodTitle')}</Text>
           <TextInput style={styles.input} value={title} onChangeText={setTitle} />
@@ -149,7 +152,7 @@ export default function EditDonationScreen() {
           />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           <Pressable
             style={({ pressed }) => [styles.saveBtn, pressed && styles.pressed, save.isPending && styles.disabled]}
             disabled={save.isPending}

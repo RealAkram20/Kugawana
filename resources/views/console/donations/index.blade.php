@@ -8,6 +8,7 @@
   @endforeach
   <div style="flex:1"></div>
   <a class="btn btn-secondary" style="border-color:var(--color-divider)" href="{{ route('console.donations.export') }}">Export CSV</a>
+  <a class="btn btn-primary" href="{{ route('console.donations.create') }}">@include('console.partials.icon', ['name' => 'plus']) Add food</a>
 </div>
 
 <div class="panel-table">

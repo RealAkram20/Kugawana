@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Console\AdminController;
 use App\Http\Controllers\Console\AuthController;
+use App\Http\Controllers\Console\BrandingController;
 use App\Http\Controllers\Console\CampaignController;
 use App\Http\Controllers\Console\CategoryController;
 use App\Http\Controllers\Console\CommunityController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Console\LearnController;
 use App\Http\Controllers\Console\MailSettingController;
 use App\Http\Controllers\Console\OrderController;
 use App\Http\Controllers\Console\PackageController;
+use App\Http\Controllers\Console\PasswordResetController;
 use App\Http\Controllers\Console\PaymentGatewayController;
 use App\Http\Controllers\Console\PushSubscriptionController;
 use App\Http\Controllers\Console\ReportController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\Console\SupportPageController;
 use App\Http\Controllers\Console\SupportReportController;
 use App\Http\Controllers\Console\UserController;
 use App\Http\Controllers\Console\WalletController;
+use App\Http\Controllers\Console\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,8 +38,38 @@ Route::get('/email/verify/{id}/{hash}', App\Http\Controllers\Auth\VerifyEmailCon
     ->middleware('signed')
     ->name('verification.verify');
 
+// Public page Google Play's store listing points at for its account-deletion
+// requirement; the in-app path is Profile → Edit profile → Delete account.
+Route::view('/account-deletion', 'account-deletion')->name('account.deletion');
+
+// The admin console operator's guide. A single self-contained HTML file with its
+// screenshots inlined, so it is streamed as-is rather than rendered through
+// Blade — its CSS carries @media rules Blade would try to read as directives.
+// Matched case-insensitively because the link is handed out as /Docs.
+Route::get('/{docs}', function () {
+    $path = resource_path('docs/console-guide.html');
+
+    abort_unless(is_file($path), 404);
+
+    return response()->file($path, [
+        'Content-Type' => 'text/html; charset=utf-8',
+        'Cache-Control' => 'public, max-age=3600',
+    ]);
+})->where('docs', '[Dd]ocs')->name('docs');
+
 Route::get('/admin/{any?}', fn () => redirect()->route('console.login'))->where('any', '.*');
 Route::get('/super-admin/{any?}', fn () => redirect()->route('console.login'))->where('any', '.*');
+Route::get('/backoffice/{any?}', fn () => redirect()->route('console.login'))->where('any', '.*');
+
+// Named without the console. prefix on purpose: Laravel's built-in ResetPassword
+// notification builds its link from route('password.reset'), and the framework
+// redirects guests to route('password.request').
+Route::prefix('console')->group(function () {
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->middleware('throttle:auth')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:auth')->name('password.update');
+});
 
 Route::prefix('console')->name('console.')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -51,6 +84,8 @@ Route::prefix('console')->name('console.')->group(function () {
 
         Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
         Route::get('/donations/export', [DonationController::class, 'export'])->name('donations.export');
+        Route::get('/donations/create', [DonationController::class, 'create'])->name('donations.create');
+        Route::post('/donations', [DonationController::class, 'store'])->name('donations.store');
         Route::get('/donations/{donation}', [DonationController::class, 'show'])->name('donations.show');
         Route::get('/donations/{donation}/edit', [DonationController::class, 'edit'])->name('donations.edit');
         Route::post('/donations/{donation}', [DonationController::class, 'update'])->name('donations.update');
@@ -60,6 +95,13 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::post('/donations/{donation}/status', [DonationController::class, 'setStatus'])->name('donations.status');
         Route::post('/donations/{donation}/split', [DonationController::class, 'split'])->name('donations.split');
         Route::post('/donations/{donation}/unsplit', [DonationController::class, 'unsplit'])->name('donations.unsplit');
+
+        Route::get('/warehouses', [WarehouseController::class, 'index'])->name('warehouses.index');
+        Route::get('/warehouses/create', [WarehouseController::class, 'create'])->name('warehouses.create');
+        Route::post('/warehouses', [WarehouseController::class, 'store'])->name('warehouses.store');
+        Route::get('/warehouses/{warehouse}/edit', [WarehouseController::class, 'edit'])->name('warehouses.edit');
+        Route::post('/warehouses/{warehouse}', [WarehouseController::class, 'update'])->name('warehouses.update');
+        Route::post('/warehouses/{warehouse}/toggle', [WarehouseController::class, 'toggle'])->name('warehouses.toggle');
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('/orders/group/{group}/accept', [OrderController::class, 'acceptGroup'])->name('orders.group.accept');
@@ -93,6 +135,10 @@ Route::prefix('console')->name('console.')->group(function () {
         Route::post('/categories/{category}/toggle', [CategoryController::class, 'toggle'])->name('categories.toggle');
 
         Route::get('/learn', [LearnController::class, 'index'])->name('learn.index');
+        Route::get('/learn/create', [LearnController::class, 'create'])->name('learn.create');
+        Route::post('/learn', [LearnController::class, 'store'])->name('learn.store');
+        Route::get('/learn/{article}/edit', [LearnController::class, 'edit'])->name('learn.edit');
+        Route::post('/learn/{article}', [LearnController::class, 'update'])->name('learn.update');
 
         Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
         Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
@@ -131,6 +177,10 @@ Route::prefix('console')->name('console.')->group(function () {
             Route::post('/countries/{country}/toggle', [CountryController::class, 'toggle'])->name('countries.toggle');
 
             Route::get('/admins', [AdminController::class, 'index'])->name('admins.index');
+            Route::get('/admins/create', [AdminController::class, 'create'])->name('admins.create');
+            Route::post('/admins', [AdminController::class, 'store'])->name('admins.store');
+            Route::get('/admins/{user}/edit', [AdminController::class, 'edit'])->name('admins.edit');
+            Route::post('/admins/{user}', [AdminController::class, 'update'])->name('admins.update');
             Route::post('/admins/{user}/approve', [AdminController::class, 'approve'])->name('admins.approve');
 
             Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
@@ -145,6 +195,9 @@ Route::prefix('console')->name('console.')->group(function () {
 
             Route::get('/settings/google', [GoogleAuthController::class, 'edit'])->name('settings.google.edit');
             Route::post('/settings/google', [GoogleAuthController::class, 'update'])->name('settings.google.update');
+
+            Route::get('/settings/branding', [BrandingController::class, 'edit'])->name('settings.branding.edit');
+            Route::post('/settings/branding', [BrandingController::class, 'update'])->name('settings.branding.update');
         });
     });
 });

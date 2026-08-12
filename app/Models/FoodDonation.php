@@ -35,6 +35,7 @@ class FoodDonation extends Model
         'contact_number',
         'status',
         'points_required',
+        'batch_points_required',
         'admin_notes',
         'approved_by',
         'approved_at',

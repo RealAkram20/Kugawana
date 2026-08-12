@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-export type Language = 'en' | 'sw' | 'fr'
+export type Language = 'en' | 'sw' | 'fr' | 'ar'
 
 interface AppState {
   language: Language | null

@@ -54,6 +54,12 @@ class FoodSplitService
             'unit_amount' => $unitAmount,
             'units_total' => $units,
             'units_available' => $available,
+            // Remember what the whole batch cost before per-unit pricing takes
+            // over, so unsplit() can restore it. Re-splitting an already split
+            // batch must not overwrite it with a per-unit price.
+            'batch_points_required' => $donation->isSplit()
+                ? $donation->batch_points_required
+                : $donation->points_required,
             'points_required' => $pointsPerUnit,
             'split_by' => $admin?->id,
             'split_at' => now(),
@@ -63,13 +69,15 @@ class FoodSplitService
         return $donation->refresh();
     }
 
-    /** Puts the batch back to a single all-or-nothing listing. */
+    /** Puts the batch back to a single all-or-nothing listing, at its old price. */
     public function unsplit(FoodDonation $donation): FoodDonation
     {
         $donation->update([
             'unit_amount' => null,
             'units_total' => null,
             'units_available' => null,
+            'points_required' => $donation->batch_points_required ?? $donation->points_required,
+            'batch_points_required' => null,
             'split_by' => null,
             'split_at' => null,
         ]);

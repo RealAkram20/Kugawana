@@ -9,9 +9,12 @@ use App\Models\AuthSetting;
 use App\Models\Country;
 use App\Models\MailSetting;
 use App\Models\User;
+use App\Notifications\PasswordResetCode;
 use App\Services\RewardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -29,6 +32,29 @@ class AuthController extends Controller
     private const PHONE_MIN = 7;
 
     private const PHONE_TAIL = 9;
+
+    /**
+     * Sign-in options the app reads at launch, so the console's auth settings
+     * take effect without an app release. Client IDs are public identifiers —
+     * they ship inside every OAuth app — so exposing them is safe.
+     */
+    public function config(): JsonResponse
+    {
+        $setting = AuthSetting::current();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'google' => [
+                    'enabled' => $setting->google_enabled && $setting->googleClientIds() !== [],
+                    'web_client_id' => $setting->google_web_client_id,
+                    'android_client_id' => $setting->google_android_client_id,
+                    'ios_client_id' => $setting->google_ios_client_id,
+                ],
+            ],
+            'message' => 'Auth configuration',
+        ]);
+    }
 
     public function register(Request $request): JsonResponse
     {
@@ -153,6 +179,12 @@ class AuthController extends Controller
                 // password login too.
                 if (! $user->hasVerifiedEmail() && $user->password) {
                     $updates['password'] = null;
+
+                    // Clearing the password is not enough on its own: whoever
+                    // pre-registered was issued a token at sign-up and would
+                    // keep full access to the account Google just proved is
+                    // somebody else's. Cut those sessions off here.
+                    $user->tokens()->delete();
                 }
 
                 $user->forceFill($updates)->save();
@@ -205,6 +237,80 @@ class AuthController extends Controller
             'success' => true,
             'data' => null,
             'message' => 'If that email needs verifying, we have sent a new link.',
+        ]);
+    }
+
+    /**
+     * Emails a 6-digit reset code. Always answers the same way so the endpoint
+     * never reveals whether an email belongs to an account. Google-only
+     * accounts (no password yet) may also reset — proving control of the inbox
+     * is the same bar Google sign-in itself sets.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email']]);
+
+        $user = User::where('email', $data['email'])->where('is_active', true)->first();
+
+        if ($user) {
+            $code = (string) random_int(100000, 999999);
+
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                ['token' => Hash::make($code), 'created_at' => now()]
+            );
+
+            try {
+                $user->notify(new PasswordResetCode($code));
+            } catch (\Throwable $e) {
+                // The neutral response still goes out (anti-enumeration), so
+                // this log line is the only trace a delivery problem leaves.
+                Log::error('Password reset email failed', ['user' => $user->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => null,
+            'message' => 'If that email belongs to an account, a reset code is on its way.',
+        ]);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'digits:6'],
+            'password' => ['required', 'confirmed', 'string', 'min:8'],
+        ]);
+
+        $row = DB::table('password_reset_tokens')->where('email', $data['email'])->first();
+
+        $valid = $row
+            && Carbon::parse($row->created_at)->addMinutes(30)->isFuture()
+            && Hash::check($data['code'], $row->token);
+
+        $user = $valid ? User::where('email', $data['email'])->where('is_active', true)->first() : null;
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'That code is not valid or has expired',
+            ], 422);
+        }
+
+        $user->update(['password' => Hash::make($data['password'])]);
+
+        // Every existing session dies with the old password — a reset after a
+        // suspected takeover must leave the intruder holding nothing.
+        $user->tokens()->delete();
+
+        DB::table('password_reset_tokens')->where('email', $data['email'])->delete();
+
+        return response()->json([
+            'success' => true,
+            'data' => null,
+            'message' => 'Password updated — sign in with your new password',
         ]);
     }
 
@@ -283,7 +389,10 @@ class AuthController extends Controller
     private function resolveCountryId(?string $isoCode): ?int
     {
         if ($isoCode) {
-            $match = Country::where('code', strtoupper($isoCode))->first();
+            // Only active countries — every country in the world is seeded, so an
+            // inactive match would file the member where no country admin can see
+            // them. They land in the default active country instead.
+            $match = Country::where('code', strtoupper($isoCode))->where('is_active', true)->first();
 
             if ($match) {
                 return $match->id;

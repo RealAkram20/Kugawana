@@ -3,7 +3,7 @@
 @section('content')
 @php use App\Support\ConsoleUi; @endphp
 <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-  <a class="btn btn-primary" href="{{ url('backoffice/super-admin/country-admins/create') }}">@include('console.partials.icon', ['name' => 'plus']) Invite admin</a>
+  <a class="btn btn-primary" href="{{ route('console.admins.create') }}">@include('console.partials.icon', ['name' => 'plus']) Add admin</a>
 </div>
 <div class="panel-table">
   <table class="table">
@@ -23,7 +23,7 @@
                 <button type="submit" class="btn btn-ghost">Approve</button>
               </form>
             @else
-              <a class="btn btn-ghost" href="{{ url('backoffice/super-admin/country-admins/' . $a->id . '/edit') }}">Manage</a>
+              <a class="btn btn-ghost" href="{{ route('console.admins.edit', $a) }}">Manage</a>
             @endif
           </td>
         </tr>

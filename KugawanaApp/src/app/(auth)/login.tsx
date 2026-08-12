@@ -78,7 +78,8 @@ export default function LoginScreen() {
     if (outcome.status === 'success') {
       setToken(outcome.auth.token)
       setUser(outcome.auth.user)
-      router.replace('/(tabs)')
+      // Google proves the email but not how to reach them for deliveries.
+      router.replace(outcome.auth.user.phone ? '/(tabs)' : '/(auth)/phone')
       return
     }
     if (outcome.status === 'unconfigured') return notify(t('auth.googleNotConfigured'))
@@ -153,7 +154,7 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <Pressable style={styles.forgotRow} onPress={() => notify(t('login.forgotComingSoon'))}>
+            <Pressable style={styles.forgotRow} onPress={() => router.push('/(auth)/forgot-password')}>
               <Text style={styles.forgotLink}>{t('login.forgotPassword')}</Text>
             </Pressable>
 

@@ -133,7 +133,18 @@ class WalletController extends Controller
                 $result = $pesapal->transactionStatus($topup->order_tracking_id);
 
                 if ($result['status'] === 'COMPLETED') {
-                    $wallet->applyTopup($topup);
+                    // Settled, for this exact top-up, on a gateway allowed to
+                    // mint real points — sandbox settlements stay pending and
+                    // are logged so a misconfigured environment is visible.
+                    if ($pesapal->matches($topup, $result) && $pesapal->mayCredit()) {
+                        $wallet->applyTopup($topup);
+                    } else {
+                        Log::warning('Pesapal settlement not creditable', [
+                            'topup' => $topup->id,
+                            'live' => $pesapal->isLive(),
+                            'result' => $result,
+                        ]);
+                    }
                 } elseif ($result['status'] === 'FAILED' || $result['status'] === 'INVALID') {
                     $topup->update(['status' => TopupStatus::Rejected]);
                 }
@@ -162,8 +173,18 @@ class WalletController extends Controller
 
         if ($topup && $topup->status === TopupStatus::Pending && $pesapal->isConfigured()) {
             try {
-                if ($pesapal->transactionStatus($trackingId)['status'] === 'COMPLETED') {
+                $result = $pesapal->transactionStatus($trackingId);
+
+                if ($result['status'] === 'COMPLETED'
+                    && $pesapal->matches($topup, $result)
+                    && $pesapal->mayCredit()) {
                     $wallet->applyTopup($topup);
+                } elseif ($result['status'] === 'COMPLETED') {
+                    Log::warning('Pesapal IPN settlement not creditable', [
+                        'topup' => $topup->id,
+                        'live' => $pesapal->isLive(),
+                        'result' => $result,
+                    ]);
                 }
             } catch (\Throwable $e) {
                 Log::warning('Pesapal IPN handling failed', ['tracking' => $trackingId, 'error' => $e->getMessage()]);

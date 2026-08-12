@@ -16,6 +16,19 @@ use App\Support\ConsoleUi;
             <span class="tag tag-accent" style="font-size:11px">Basket · {{ $g['count'] }} items</span>
           @endif
         </div>
+        @php $receiverPhone = $g['receiver']?->phone; @endphp
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px">
+          @if ($receiverPhone)
+            <a href="tel:{{ $receiverPhone }}" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--color-accent-700);text-decoration:none">
+              📞 {{ $receiverPhone }}
+            </a>
+            <a href="https://wa.me/{{ ltrim($receiverPhone, '+') }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#128C7E;text-decoration:none">
+              💬 WhatsApp
+            </a>
+          @else
+            <span class="text-muted" style="font-size:13px">No phone on file</span>
+          @endif
+        </div>
         <div class="text-muted" style="font-size:13px;margin-top:4px">
           {{ $g['reference'] }} · {{ $g['total_points'] }} pts · {{ ucfirst($g['delivery_method']) }} · {{ $g['created_at']->diffForHumans() }}
         </div>

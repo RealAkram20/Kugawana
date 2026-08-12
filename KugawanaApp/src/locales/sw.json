@@ -37,6 +37,9 @@
     "registerFailed": "Imeshindwa kufungua akaunti yako. Angalia mtandao kisha ujaribu tena.",
     "googleNotConfigured": "Kuingia kwa Google bado hakujawekwa kwenye toleo hili.",
     "googleFailed": "Imeshindwa kuingia kwa Google. Tafadhali jaribu tena.",
+    "phoneCompletionTitle": "Weka namba yako ya simu",
+    "phoneCompletionSubtitle": "Tunahitaji namba ya simu ili watoaji na timu yetu waweze kuwasiliana nawe kuhusu maombi yako ya chakula.",
+    "phoneCompletionFailed": "Imeshindwa kuhifadhi namba yako. Tafadhali jaribu tena.",
     "verifyTitle": "Thibitisha barua pepe yako",
     "verifyResend": "Tuma kiungo tena",
     "verifyResent": "Tumetuma kiungo kipya cha uthibitisho kwenye barua pepe yako.",
@@ -466,7 +469,13 @@
     "bioPlaceholder": "Ijulishe jamii kidogo kukuhusu",
     "saved": "Wasifu umesasishwa.",
     "saveFailed": "Imeshindwa kuhifadhi wasifu wako. Tafadhali jaribu tena.",
-    "nameRequired": "Tafadhali weka jina lako."
+    "nameRequired": "Tafadhali weka jina lako.",
+    "deleteAccount": "Futa akaunti",
+    "deleteTitle": "Ufute akaunti yako?",
+    "deleteBody": "Wasifu wako, namba ya simu na njia za kuingia zitafutwa kabisa. Historia ya oda na pointi huhifadhiwa bila jina lako kwa ajili ya hesabu. Hatua hii haiwezi kurudishwa.",
+    "deleteConfirm": "Futa",
+    "deleteFailed": "Imeshindikana kufuta akaunti. Jaribu tena.",
+    "deleteHint": "Kufuta huondoa taarifa zako binafsi kabisa."
   },
   "login": {
     "title": "Karibu Tena",
@@ -493,5 +502,25 @@
     "title": "Arifa",
     "markAllRead": "Weka zote kuwa zimesomwa",
     "empty": "Hakuna arifa bado."
+  },
+  "forgot": {
+    "title": "Weka upya nenosiri",
+    "subtitle": "Weka barua pepe ya akaunti yako, tutakutumia msimbo wa tarakimu 6.",
+    "resetSubtitle": "Weka msimbo tuliotuma kwa {{email}} kisha chagua nenosiri jipya.",
+    "email": "Barua pepe",
+    "emailPlaceholder": "wewe@mfano.com",
+    "invalidEmail": "Weka barua pepe sahihi",
+    "codeSent": "Ikiwa barua pepe hiyo ina akaunti, msimbo unakuja.",
+    "code": "Msimbo wa kuweka upya",
+    "codePlaceholder": "Msimbo wa tarakimu 6",
+    "invalidCode": "Weka msimbo wa tarakimu 6 kutoka kwenye barua pepe",
+    "newPassword": "Nenosiri jipya",
+    "newPasswordPlaceholder": "Angalau herufi 8",
+    "passwordTooShort": "Nenosiri linahitaji angalau herufi 8",
+    "resend": "Tuma msimbo mpya",
+    "sendCode": "Tuma msimbo",
+    "resetButton": "Weka upya nenosiri",
+    "success": "Nenosiri limebadilishwa — ingia kwa nenosiri jipya.",
+    "failed": "Hitilafu imetokea. Jaribu tena."
   }
 }

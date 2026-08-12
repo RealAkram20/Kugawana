@@ -94,7 +94,8 @@ export default function RegisterScreen() {
     if (outcome.status === 'success') {
       setToken(outcome.auth.token)
       setUser(outcome.auth.user)
-      router.replace('/(tabs)')
+      // Google proves the email but not how to reach them for deliveries.
+      router.replace(outcome.auth.user.phone ? '/(tabs)' : '/(auth)/phone')
       return
     }
     if (outcome.status === 'unconfigured') return notify(t('auth.googleNotConfigured'))

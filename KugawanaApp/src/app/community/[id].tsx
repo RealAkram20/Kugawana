@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,7 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CommentThread } from '../../components/community/CommentThread'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
@@ -24,6 +25,7 @@ import type { CommunityComment, CommunityPostDetail } from '../../types/communit
 
 export default function CommunityPostDetailScreen() {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
   const postId = Number(id)
 
@@ -202,7 +204,7 @@ export default function CommunityPostDetailScreen() {
       </View>
       <View style={styles.headerBorder} />
 
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <View style={styles.postHead}>
             <Pressable
@@ -283,7 +285,7 @@ export default function CommunityPostDetailScreen() {
           ))}
         </ScrollView>
 
-        <View style={styles.composerWrap}>
+        <View style={[styles.composerWrap, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           {replyTo ? (
             <View style={styles.replyBanner}>
               <Text style={styles.replyBannerText} numberOfLines={1}>

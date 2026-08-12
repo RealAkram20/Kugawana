@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { CartButton } from '../../components/CartButton'
+import { PhotoGallery } from '../../components/food/PhotoGallery'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -82,7 +82,9 @@ export default function FoodDetailScreen() {
       />
       <ScrollView contentContainerStyle={styles.content}>
         {food.images.length > 0 ? (
-          <Image source={{ uri: food.images[0] }} style={styles.image} contentFit="cover" />
+          <View style={styles.gallery}>
+            <PhotoGallery images={food.images} />
+          </View>
         ) : (
           <View style={styles.placeholder}>
             <Text style={styles.placeholderText}>{food.title.slice(0, 1)}</Text>
@@ -199,10 +201,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
-  image: {
-    width: '100%',
-    height: 220,
-    borderRadius: 16,
+  gallery: {
     marginBottom: spacing.md,
   },
   placeholder: {

@@ -12,7 +12,7 @@
           <tr>
             <td style="font-weight:600">{{ number_format($p->points) }}</td>
             <td>{{ $p->currency }} {{ number_format((float) $p->price) }}</td>
-            <td style="text-align:right"><a class="btn btn-ghost" href="{{ url('backoffice/super-admin/point-packages/' . $p->id . '/edit') }}">Edit</a></td>
+            <td style="text-align:right"><a class="btn btn-ghost" href="{{ route('console.wallet.packages.edit', $p) }}">Edit</a></td>
           </tr>
         @endforeach
       </tbody>
@@ -65,12 +65,30 @@
   </div>
 
   <div class="panel">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+      <h5 style="margin:0;flex:1">Logo &amp; favicon</h5>
+      <a class="btn btn-ghost" href="{{ route('console.settings.branding.edit') }}">Configure</a>
+    </div>
+    <p class="text-muted" style="font-size:13px;margin-bottom:14px">The logo and browser-tab icon used across the console and sign-in page.</p>
+    @php $branding = App\Models\BrandingSetting::current(); @endphp
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
+      <div style="flex:1;font-size:14px;font-weight:600">Logo</div>
+      <span class="tag {{ $branding->logo_path ? 'tag-accent' : 'tag-outline' }}">{{ $branding->logo_path ? 'Custom' : 'Built-in' }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+      <div style="flex:1;font-size:14px;font-weight:600">Favicon</div>
+      <span class="tag {{ $branding->favicon_path ? 'tag-accent' : 'tag-outline' }}">{{ $branding->favicon_path ? 'Custom' : 'Default' }}</span>
+    </div>
+  </div>
+
+  <div class="panel">
     <h5 style="margin:0 0 12px">Languages</h5>
     <p class="text-muted" style="font-size:13px;margin-bottom:14px">UI strings served from translation files. Content follows the user's selection where a translation exists.</p>
     <div style="display:flex;gap:8px">
       <span class="tag tag-accent">English</span>
       <span class="tag tag-neutral">Swahili</span>
       <span class="tag tag-neutral">Français</span>
+      <span class="tag tag-neutral">العربية</span>
     </div>
   </div>
 

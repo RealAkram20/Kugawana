@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Country;
 use App\Models\PointPackage;
 use App\Models\WalletTopup;
+use App\Services\PesapalService;
 use App\Services\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -36,18 +37,54 @@ class WalletController extends Controller
             ->orderBy('points')
             ->get();
 
+        $pesapal = app(PesapalService::class);
+
         return view('console.wallet.index', [
             'title' => 'Points',
             'requests' => $requests,
             'packages' => $packages,
             'countries' => $isSuper ? Country::orderBy('name')->get(['id', 'name']) : collect(),
             'isSuper' => $isSuper,
+            'pesapalSandbox' => $pesapal->isConfigured() && ! $pesapal->isLive(),
         ]);
     }
 
     public function approve(WalletTopup $topup): RedirectResponse
     {
         $this->guardScope($topup);
+
+        // A pesapal request must be proven settled at the gateway before it
+        // credits — approving on faith is exactly how unpaid points get
+        // minted when a member abandons checkout and the row sits pending.
+        // Manual requests remain a human decision: the admin has confirmed
+        // the money offline against the payment reference.
+        if ($topup->payment_method === 'pesapal' && $topup->status === TopupStatus::Pending) {
+            if (blank($topup->order_tracking_id)) {
+                return back()->with('toast', 'No Pesapal transaction exists for this request — reject it, or have the member pay again');
+            }
+
+            $pesapal = app(PesapalService::class);
+
+            try {
+                $result = $pesapal->transactionStatus($topup->order_tracking_id);
+            } catch (\Throwable $e) {
+                report($e);
+
+                return back()->with('toast', 'Pesapal could not be reached to verify this payment — nothing was credited, try again shortly');
+            }
+
+            if ($result['status'] !== 'COMPLETED') {
+                return back()->with('toast', "Pesapal reports this payment as {$result['status']} — nothing was credited");
+            }
+
+            if (! $pesapal->mayCredit()) {
+                return back()->with('toast', 'This payment settled on the Pesapal SANDBOX — test money, nothing was credited');
+            }
+
+            if (! $pesapal->matches($topup, $result)) {
+                return back()->with('toast', 'The Pesapal transaction does not match this request — nothing was credited');
+            }
+        }
 
         $applied = app(WalletService::class)->applyTopup($topup, auth()->id());
 

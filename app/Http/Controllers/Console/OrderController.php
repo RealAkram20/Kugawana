@@ -82,7 +82,12 @@ class OrderController extends Controller
     {
         $this->guardScope($order);
 
-        $order->update(['status' => OrderStatus::Accepted]);
+        // Locked and re-checked like cancelOrder(): without this, a stale list
+        // page (or a replayed POST) could accept an order that was already
+        // cancelled and refunded, leaving the receiver holding both.
+        if (! $this->transition($order, [OrderStatus::Pending], OrderStatus::Accepted)) {
+            return back()->with('toast', "Order {$order->id} is no longer pending");
+        }
 
         $this->notifyReceiver(
             $order,
@@ -98,10 +103,9 @@ class OrderController extends Controller
     {
         $this->guardScope($order);
 
-        $order->update([
-            'status' => OrderStatus::Completed,
-            'completed_at' => now(),
-        ]);
+        if (! $this->transition($order, [OrderStatus::Pending, OrderStatus::Accepted], OrderStatus::Completed)) {
+            return back()->with('toast', "Order {$order->id} can no longer be marked delivered");
+        }
 
         $this->notifyReceiver(
             $order,
@@ -111,6 +115,31 @@ class OrderController extends Controller
         );
 
         return back()->with('toast', "Order {$order->id} marked delivered");
+    }
+
+    /**
+     * Moves an order to $to only if it is still in one of $from, deciding under
+     * a row lock. Returns false when someone else already moved it, so callers
+     * can report that instead of silently acting on stale state.
+     *
+     * @param  array<int, OrderStatus>  $from
+     */
+    private function transition(Order $order, array $from, OrderStatus $to): bool
+    {
+        return DB::transaction(function () use ($order, $from, $to): bool {
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+
+            if (! $locked || ! in_array($locked->status, $from, true)) {
+                return false;
+            }
+
+            $locked->update([
+                'status' => $to,
+                ...($to === OrderStatus::Completed ? ['completed_at' => now()] : []),
+            ]);
+
+            return true;
+        });
     }
 
     /** Tells the person who requested the food that an admin acted on their order. */

@@ -142,7 +142,42 @@ class PesapalService
             'status' => strtoupper((string) $response->json('payment_status_description')),
             'reference' => $response->json('merchant_reference'),
             'method' => $response->json('payment_method'),
+            'amount' => $response->json('amount'),
+            'currency' => $response->json('currency'),
+            'confirmation_code' => $response->json('confirmation_code'),
         ];
+    }
+
+    public function isLive(): bool
+    {
+        return str_contains($this->baseUrl(), '//pay.pesapal.com');
+    }
+
+    /**
+     * Whether a settled payment on this gateway may mint real points. In
+     * production only the live gateway counts — a sandbox "Completed" is test
+     * money, and crediting it hands out points nobody paid for.
+     */
+    public function mayCredit(): bool
+    {
+        return $this->isLive() || ! app()->environment('production');
+    }
+
+    /**
+     * The settled transaction must be THIS top-up: same merchant reference,
+     * full amount. Pesapal omitting the amount is tolerated (older responses);
+     * a present-but-different amount is not.
+     */
+    public function matches(WalletTopup $topup, array $result): bool
+    {
+        $expected = $topup->merchant_reference ?: ('KGW-' . $topup->id);
+
+        if ((string) $result['reference'] !== $expected) {
+            return false;
+        }
+
+        return $result['amount'] === null
+            || abs((float) $result['amount'] - (float) $topup->amount) < 0.01;
     }
 
     /** The gateway is live when switched on in the console, or when env holds keys. */

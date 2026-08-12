@@ -6,6 +6,7 @@ use App\Models\RewardCampaign;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Notifications\KugawanaNotification;
+use Illuminate\Support\Facades\DB;
 
 class RewardService
 {
@@ -29,12 +30,26 @@ class RewardService
         foreach ($campaigns as $campaign) {
             $ref = 'reward:' . $campaign->id . ':' . ($reference ?? $user->id);
 
-            if (WalletTransaction::where('user_id', $user->id)->where('reference', $ref)->exists()) {
-                continue;
-            }
+            // The already-paid check and the credit must sit under one user
+            // row lock, or two concurrent triggers with the same reference
+            // both pass the check and both pay. A unique index can't back
+            // this up — order debits legitimately reuse their reference —
+            // so the lock is the only line of defence.
+            $paid = DB::transaction(function () use ($user, $campaign, $ref) {
+                $locked = User::lockForUpdate()->find($user->id);
 
-            $this->wallet->credit($user, $campaign->points, 'reward: ' . $campaign->name, $ref);
-            $awarded += $campaign->points;
+                if (WalletTransaction::where('user_id', $locked->id)->where('reference', $ref)->exists()) {
+                    return false;
+                }
+
+                $this->wallet->credit($locked, $campaign->points, 'reward: ' . $campaign->name, $ref);
+
+                return true;
+            });
+
+            if ($paid) {
+                $awarded += $campaign->points;
+            }
         }
 
         if ($awarded > 0) {

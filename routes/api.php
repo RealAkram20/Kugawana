@@ -14,10 +14,14 @@ use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/auth/config', [AuthController::class, 'config']);
+
 Route::middleware('throttle:auth')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/google', [AuthController::class, 'google']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 });
 Route::post('/auth/email/resend', [AuthController::class, 'resendVerification'])
     ->middleware('throttle:email-verification');
@@ -31,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
+    Route::delete('/profile', [ProfileController::class, 'destroy']);
 
     Route::get('/countries', [CountryController::class, 'index']);
 
@@ -40,34 +45,43 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/food', [FoodController::class, 'index']);
     Route::get('/food/mine', [FoodController::class, 'mine']);
     Route::get('/food/{food}', [FoodController::class, 'show']);
-    Route::post('/food', [FoodController::class, 'store']);
-    Route::put('/food/{food}', [FoodController::class, 'update']);
-    Route::post('/food/{food}/complete', [FoodController::class, 'complete']);
     Route::get('/food/{food}/interested', [FoodController::class, 'interested']);
     Route::get('/categories', [FoodController::class, 'categories']);
     Route::get('/units', [FoodController::class, 'units']);
 
     Route::get('/orders', [OrderController::class, 'index']);
-    Route::post('/orders', [OrderController::class, 'store']);
-    Route::post('/orders/checkout', [OrderController::class, 'checkout']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
-    Route::put('/orders/{order}', [OrderController::class, 'update']);
-    Route::post('/orders/{order}/complete', [OrderController::class, 'complete']);
-    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
-    Route::post('/orders/{order}/rate', [RatingController::class, 'store']);
     Route::get('/members/{member}/reviews', [RatingController::class, 'forMember']);
 
     Route::get('/wallet', [WalletController::class, 'index']);
     Route::get('/wallet/packages', [WalletController::class, 'packages']);
-    Route::post('/wallet/topup', [WalletController::class, 'topup']);
     Route::get('/wallet/topup/{topup}/status', [WalletController::class, 'topupStatus']);
 
     Route::get('/community', [CommunityController::class, 'index']);
-    Route::post('/community', [CommunityController::class, 'store']);
     Route::get('/community/{post}', [CommunityController::class, 'show']);
-    Route::post('/community/{post}/like', [CommunityController::class, 'like']);
-    Route::post('/community/{post}/comment', [CommunityController::class, 'comment']);
     Route::get('/community/{post}/comments/{comment}/replies', [CommunityController::class, 'replies']);
+
+    // Anything that donates, orders, spends, or posts requires a reachable
+    // phone number on file. Reads stay open so a phone-less session can still
+    // browse, and PUT /profile stays open so the number can actually be set.
+    Route::middleware('phone.required')->group(function () {
+        Route::post('/food', [FoodController::class, 'store']);
+        Route::put('/food/{food}', [FoodController::class, 'update']);
+        Route::post('/food/{food}/complete', [FoodController::class, 'complete']);
+
+        Route::post('/orders', [OrderController::class, 'store']);
+        Route::post('/orders/checkout', [OrderController::class, 'checkout']);
+        Route::put('/orders/{order}', [OrderController::class, 'update']);
+        Route::post('/orders/{order}/complete', [OrderController::class, 'complete']);
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+        Route::post('/orders/{order}/rate', [RatingController::class, 'store']);
+
+        Route::post('/wallet/topup', [WalletController::class, 'topup']);
+
+        Route::post('/community', [CommunityController::class, 'store']);
+        Route::post('/community/{post}/like', [CommunityController::class, 'like']);
+        Route::post('/community/{post}/comment', [CommunityController::class, 'comment']);
+    });
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);

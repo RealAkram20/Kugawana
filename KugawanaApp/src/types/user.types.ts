@@ -5,6 +5,8 @@ export interface User {
   name: string
   email: string
   phone: string | null
+  /** ISO 3166-1 alpha-2 of the dial code behind `phone`; write-only for the API. */
+  phone_country?: string | null
   role: UserRole
   country_id: number | null
   country_name?: string | null

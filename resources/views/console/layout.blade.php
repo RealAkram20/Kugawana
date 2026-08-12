@@ -1,9 +1,11 @@
+@php $branding = App\Models\BrandingSetting::current(); @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ $title ?? 'Console' }} · Kugawana</title>
+<link rel="icon" href="{{ $branding->faviconUrl() }}">
 <link rel="stylesheet" href="{{ asset('css/console.css') }}">
 </head>
 <body>
@@ -24,6 +26,7 @@ $navGroups = [
     ['label' => 'Operations', 'items' => [
         ['icon' => 'donations', 'label' => 'Food donations', 'route' => 'console.donations.index', 'match' => 'console.donations.*'],
         ['icon' => 'orders', 'label' => 'Orders', 'route' => 'console.orders.index', 'match' => 'console.orders.*'],
+        ['icon' => 'warehouse', 'label' => 'Warehouses', 'route' => 'console.warehouses.index', 'match' => 'console.warehouses.*'],
         ['icon' => 'wallet', 'label' => 'Points', 'route' => 'console.wallet.index', 'match' => 'console.wallet.*'],
     ]],
     ['label' => 'Catalog', 'items' => [
@@ -62,8 +65,12 @@ $countryTag = $user->country ? $user->country->code . ' · ' . $user->country->n
 <div class="console-shell" id="shell">
   <aside class="console-sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">K</div>
-      <div class="brand-name side-label">Kugawana</div>
+      @if ($branding->logoUrl())
+        <img src="{{ $branding->logoUrl() }}" alt="Kugawana" style="max-height:34px;max-width:100%;object-fit:contain">
+      @else
+        <div class="brand-mark">K</div>
+        <div class="brand-name side-label">Kugawana</div>
+      @endif
     </div>
     <nav class="sidebar-nav">
       @foreach ($navGroups as $group)
@@ -216,5 +223,7 @@ if (toast) setTimeout(() => toast.remove(), 2400);
   })();
 })();
 </script>
+
+<script src="{{ asset('js/password-toggle.js') }}"></script>
 </body>
 </html>
