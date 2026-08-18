@@ -23,6 +23,7 @@ const options: { code: Language; name: string; caption: string; flag: number }[]
   { code: 'en', name: 'English', caption: 'Continue in English', flag: require('../../../assets/images/flag-en.png') },
   { code: 'fr', name: 'Français', caption: 'Continuer en Français', flag: require('../../../assets/images/flag-fr.png') },
   { code: 'sw', name: 'Kiswahili', caption: 'Endelea kwa Kiswahili', flag: require('../../../assets/images/flag-sw.png') },
+  { code: 'ar', name: 'العربية', caption: 'المتابعة بالعربية', flag: require('../../../assets/images/flag-ar.png') },
 ]
 
 export default function LanguageScreen() {

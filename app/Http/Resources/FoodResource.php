@@ -23,6 +23,13 @@ class FoodResource extends JsonResource
             // structured values the share and edit forms bind to.
             'quantity' => $this->quantity,
             'amount' => (float) $this->amount,
+            // A split batch is claimed one unit at a time, so the app needs the
+            // unit size and what is left as well as the whole amount.
+            'is_split' => $this->isSplit(),
+            'unit_amount' => $this->unit_amount === null ? null : (float) $this->unit_amount,
+            'unit_quantity' => $this->unit_quantity,
+            'units_total' => $this->units_total,
+            'units_available' => $this->units_available,
             'unit' => $this->whenLoaded('unit', fn () => $this->unit ? [
                 'id' => $this->unit->id,
                 'name' => $this->unit->name,
@@ -41,13 +48,14 @@ class FoodResource extends JsonResource
             'donor_name' => $this->whenLoaded('donor', fn () => $this->donor?->name),
             'status' => $this->status->value,
             'is_active' => $this->status === FoodStatus::Published
-                && $this->expiry_date?->isFuture(),
+                && $this->expiry_date?->isFuture()
+                && ! $this->isSoldOut(),
             'is_owner' => $isOwner,
-            'can_complete' => $isOwner && ! in_array($this->status, [
-                FoodStatus::Completed,
-                FoodStatus::Rejected,
-                FoodStatus::Expired,
-            ], true),
+            // Both stop at approval: once the team has taken the food in, it is
+            // theirs to manage. Kept as two flags so the app can label each
+            // button, and so they can diverge later without an API change.
+            'can_edit' => $isOwner && $this->donorCanManage(),
+            'can_complete' => $isOwner && $this->donorCanManage(),
             'time_ago' => $this->created_at?->diffForHumans(short: true),
             'created_at' => $this->created_at?->toIso8601String(),
 

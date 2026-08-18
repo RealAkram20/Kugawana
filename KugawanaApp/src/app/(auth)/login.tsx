@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import { useGoogleAuth } from '../../hooks/useGoogleAuth'
 import { useResponsive } from '../../hooks/useResponsive'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../stores/auth.store'
+import { isVerificationRequired, promptEmailVerification } from '../../utils/verifyEmailPrompt'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -61,6 +61,10 @@ export default function LoginScreen() {
       setUser(user)
       router.replace('/(tabs)')
     } catch (error: any) {
+      if (isVerificationRequired(error)) {
+        promptEmailVerification(t, error.response.data.email, error.response.data.message)
+        return
+      }
       const status = error.response?.status
       notify(status === 401 || status === 422 ? t('login.invalidCredentials') : t('login.failed'))
     } finally {
@@ -74,7 +78,8 @@ export default function LoginScreen() {
     if (outcome.status === 'success') {
       setToken(outcome.auth.token)
       setUser(outcome.auth.user)
-      router.replace('/(tabs)')
+      // Google proves the email but not how to reach them for deliveries.
+      router.replace(outcome.auth.user.phone ? '/(tabs)' : '/(auth)/phone')
       return
     }
     if (outcome.status === 'unconfigured') return notify(t('auth.googleNotConfigured'))
@@ -85,7 +90,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -149,7 +154,7 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <Pressable style={styles.forgotRow} onPress={() => notify(t('login.forgotComingSoon'))}>
+            <Pressable style={styles.forgotRow} onPress={() => router.push('/(auth)/forgot-password')}>
               <Text style={styles.forgotLink}>{t('login.forgotPassword')}</Text>
             </Pressable>
 

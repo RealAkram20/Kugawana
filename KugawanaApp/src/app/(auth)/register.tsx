@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,6 +24,7 @@ import { useGoogleAuth } from '../../hooks/useGoogleAuth'
 import { useResponsive } from '../../hooks/useResponsive'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../stores/auth.store'
+import { isVerificationRequired, promptEmailVerification } from '../../utils/verifyEmailPrompt'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD = 8
@@ -74,6 +74,14 @@ export default function RegisterScreen() {
       setUser(user)
       router.replace('/(tabs)')
     } catch (error: any) {
+      // Account was created but verification is required — send them to sign in
+      // once they have clicked the link.
+      if (isVerificationRequired(error)) {
+        promptEmailVerification(t, error.response.data.email, error.response.data.message, () =>
+          router.replace('/(auth)/login'),
+        )
+        return
+      }
       notify(registerError(error, t))
     } finally {
       setLoading(false)
@@ -86,7 +94,8 @@ export default function RegisterScreen() {
     if (outcome.status === 'success') {
       setToken(outcome.auth.token)
       setUser(outcome.auth.user)
-      router.replace('/(tabs)')
+      // Google proves the email but not how to reach them for deliveries.
+      router.replace(outcome.auth.user.phone ? '/(tabs)' : '/(auth)/phone')
       return
     }
     if (outcome.status === 'unconfigured') return notify(t('auth.googleNotConfigured'))
@@ -97,7 +106,7 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"

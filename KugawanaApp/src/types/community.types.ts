@@ -1,3 +1,5 @@
+import type { PickedImage } from './food.types'
+
 export type PostType = 'request' | 'offer' | 'discussion'
 
 export type FeedFilter = 'all' | PostType
@@ -22,13 +24,19 @@ export interface CreatePostPayload {
   content: string
   post_type: PostType
   location?: string
+  images?: PickedImage[]
 }
 
 export interface CommunityComment {
   id: number
+  /** null for a thread starter; the comment it answers otherwise. */
+  parent_id: number | null
+  author_id: number
   author_name: string
   profile_photo: string | null
   content: string
+  /** Only ever set on thread starters — threads are two levels deep. */
+  replies_count: number
   time_ago: string
 }
 

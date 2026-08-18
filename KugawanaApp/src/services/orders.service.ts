@@ -1,3 +1,4 @@
+import type { CheckoutPayload, CheckoutResult } from '../types/cart.types'
 import type {
   Order,
   PointPackage,
@@ -36,13 +37,34 @@ export const ordersService = {
     return data.data
   },
 
-  async placeOrder(foodId: number, deliveryMethod: 'pickup' | 'delivery', deliveryAddress?: string): Promise<Order> {
+  async placeOrder(
+    foodId: number,
+    deliveryMethod: 'pickup' | 'delivery',
+    deliveryAddress?: string,
+    units = 1,
+  ): Promise<Order> {
     const { data } = await api.post('/orders', {
       food_donation_id: foodId,
       delivery_method: deliveryMethod,
       delivery_address: deliveryAddress,
+      units,
     })
     return data.data
+  },
+
+  /** Places a whole basket in one request; some lines may be skipped or reduced. */
+  async checkout(payload: CheckoutPayload): Promise<CheckoutResult> {
+    try {
+      const { data } = await api.post('/orders/checkout', payload)
+      return data.data
+    } catch (error: any) {
+      // A basket where nothing could be placed comes back 422 but still carries
+      // the per-line reasons, so surface it as a result, not a thrown error.
+      if (error.response?.status === 422 && error.response.data?.data) {
+        return error.response.data.data as CheckoutResult
+      }
+      throw error
+    }
   },
 }
 

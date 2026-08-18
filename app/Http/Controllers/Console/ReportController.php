@@ -7,7 +7,6 @@ use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
 use App\Models\FoodDonation;
 use App\Models\Order;
-use App\Models\Rating;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\View\View;
@@ -23,11 +22,23 @@ class ReportController extends Controller
         $donations = FoodDonation::query()
             ->when($countryId, fn ($q) => $q->where('country_id', $countryId));
 
+        // Scoped the same way as the dashboard: orders reach country through the
+        // food they are for, point ledgers through the member they belong to.
+        $completedOrders = Order::query()
+            ->whereNotNull('completed_at')
+            ->when($countryId, fn ($q) => $q->whereHas('foodDonation', fn ($f) => $f->where('country_id', $countryId)))
+            ->count();
+
+        $points = fn (TransactionType $type) => (int) WalletTransaction::query()
+            ->where('type', $type)
+            ->when($countryId, fn ($q) => $q->whereHas('user', fn ($u) => $u->where('country_id', $countryId)))
+            ->sum('points');
+
         $reportKpis = [
             ['label' => 'Total donations', 'value' => number_format((clone $donations)->count())],
-            ['label' => 'Orders completed', 'value' => number_format(Order::whereNotNull('completed_at')->count())],
-            ['label' => 'Points spent', 'value' => number_format((int) WalletTransaction::where('type', TransactionType::Debit)->sum('points'))],
-            ['label' => 'Reward points issued', 'value' => number_format((int) WalletTransaction::where('type', TransactionType::Credit)->sum('points'))],
+            ['label' => 'Orders completed', 'value' => number_format($completedOrders)],
+            ['label' => 'Points spent', 'value' => number_format($points(TransactionType::Debit))],
+            ['label' => 'Reward points issued', 'value' => number_format($points(TransactionType::Credit))],
         ];
 
         $months = collect(range(5, 0))->map(fn ($i) => now()->subMonths($i)->startOfMonth());
@@ -39,7 +50,12 @@ class ReportController extends Controller
             'h' => (int) round($counts[$i] / $max * 150),
         ]);
 
+        // A donor's score lives on the ratings left against their donations, so
+        // it comes through the ratingsReceived relation — grouping ratings by
+        // user_id would average what the *reviewer* handed out instead.
         $topDonors = User::withCount('donations')
+            ->withCount('ratingsReceived')
+            ->withAvg('ratingsReceived', 'stars')
             ->when($countryId, fn ($q) => $q->where('country_id', $countryId))
             ->having('donations_count', '>', 0)
             ->orderByDesc('donations_count')
@@ -53,17 +69,12 @@ class ReportController extends Controller
             ->limit(5)
             ->get();
 
-        $ratings = Rating::selectRaw('user_id, avg(stars) as avg_stars')
-            ->groupBy('user_id')
-            ->pluck('avg_stars', 'user_id');
-
         return view('console.reports.index', [
             'title' => 'Reports',
             'reportKpis' => $reportKpis,
             'monthBars' => $monthBars,
             'topDonors' => $topDonors,
             'topReceivers' => $topReceivers,
-            'ratings' => $ratings,
         ]);
     }
 }

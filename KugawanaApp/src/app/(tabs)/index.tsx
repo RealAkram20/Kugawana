@@ -2,12 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import {
-  Bell,
   BookOpen,
   Ellipsis,
   Heart,
   MapPin,
-  Menu,
   MessageCircle,
   Salad,
   CirclePlus,
@@ -28,17 +26,17 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { NotificationsSheet } from '../../components/NotificationsSheet'
+import { CartButton } from '../../components/CartButton'
 import { CategoryIcon } from '../../components/ui/CategoryIcon'
 import { PagedSlider } from '../../components/ui/PagedSlider'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useLikePost } from '../../hooks/useLikePost'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { communityService } from '../../services/community.service'
 import { foodService } from '../../services/food.service'
 import { learnService } from '../../services/learn.service'
-import { notificationsService } from '../../services/notifications.service'
 import { useAuthStore } from '../../stores/auth.store'
 
 /** How many cards each home carousel carries before "See all" takes over. */
@@ -55,7 +53,6 @@ export default function HomeScreen() {
   const { t } = useTranslation()
   const { width } = useWindowDimensions()
   const user = useAuthStore((state) => state.user)
-  const [bellOpen, setBellOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   usePushNotifications()
@@ -91,14 +88,6 @@ export default function HomeScreen() {
     queryFn: () => learnService.articles(),
   })
 
-  // Drives the bell badge; the sheet reuses the same cache when it opens.
-  const { data: notifications } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => notificationsService.list(),
-  })
-
-  const unreadCount = notifications?.unread_count ?? 0
-
   const firstName = user?.name?.split(' ')[0] ?? ''
   const actionLabels: Record<string, string> = {
     find: t('home.findFood'),
@@ -110,6 +99,8 @@ export default function HomeScreen() {
   // One slide is exactly as wide as the padded content, so paging lands cleanly
   // whatever the device width.
   const slideWidth = width - spacing.md * 2
+
+  const like = useLikePost()
 
   const availableFood = (listings ?? []).slice(0, MAX_CARDS)
   const recentPosts = (posts ?? []).slice(0, MAX_CARDS)
@@ -123,23 +114,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
-          <Pressable hitSlop={8}>
-            <Menu size={26} color={colors.textPrimary} strokeWidth={2.2} />
-          </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={styles.bellWrap}
-            onPress={() => setBellOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('notifications.title')}
-          >
-            <Bell size={24} color={colors.textPrimary} strokeWidth={2.2} />
-            {unreadCount > 0 ? (
-              <View style={styles.bellBadge}>
-                <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-              </View>
-            ) : null}
-          </Pressable>
+          <CartButton />
         </View>
 
         <Text style={styles.greeting}>
@@ -238,7 +213,12 @@ export default function HomeScreen() {
                     {item.pickup_address ?? ''}
                   </Text>
                   <Text style={styles.foodMeta} numberOfLines={1}>
-                    {item.quantity}
+                    {item.is_split
+                      ? t('food.unitsLeft', {
+                          available: item.units_available,
+                          total: item.units_total,
+                        })
+                      : item.quantity}
                   </Text>
                   <View style={styles.freshRow}>
                     <View style={styles.freshDot} />
@@ -265,49 +245,63 @@ export default function HomeScreen() {
               slideWidth={slideWidth}
               keyExtractor={(post) => String(post.id)}
               renderItem={(post) => (
-                <Pressable
-                  style={styles.postCard}
-                  onPress={() => router.push({ pathname: '/community/[id]', params: { id: post.id } })}
-                >
-                  <View style={styles.postHeader}>
-                    {post.profile_photo ? (
-                      <Image source={post.profile_photo} style={styles.avatar} contentFit="cover" />
-                    ) : (
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{post.author_name?.slice(0, 1).toUpperCase()}</Text>
+                // The card is a plain View so the like button is a sibling of the
+                // link, not a child of it. Nested Pressables let the outer one
+                // take the touch, which is what stopped the heart working here.
+                <View style={styles.postCard}>
+                  <Pressable
+                    style={styles.postLink}
+                    onPress={() => router.push({ pathname: '/community/[id]', params: { id: post.id } })}
+                  >
+                    <View style={styles.postHeader}>
+                      {post.profile_photo ? (
+                        <Image source={post.profile_photo} style={styles.avatar} contentFit="cover" />
+                      ) : (
+                        <View style={styles.avatar}>
+                          <Text style={styles.avatarText}>{post.author_name?.slice(0, 1).toUpperCase()}</Text>
+                        </View>
+                      )}
+                      <View style={styles.postHeaderText}>
+                        <Text style={styles.postAuthor} numberOfLines={1}>
+                          {post.author_name}
+                        </Text>
+                        <Text style={styles.postMeta}>{post.time_ago}</Text>
                       </View>
-                    )}
-                    <View style={styles.postHeaderText}>
-                      <Text style={styles.postAuthor} numberOfLines={1}>
-                        {post.author_name}
-                      </Text>
-                      <Text style={styles.postMeta}>{post.time_ago}</Text>
+                      <Ellipsis size={20} color={colors.textSecondary} />
                     </View>
-                    <Ellipsis size={20} color={colors.textSecondary} />
-                  </View>
-                  <View style={styles.postBody}>
-                    <Text style={styles.postText} numberOfLines={3}>
-                      {post.content}
-                    </Text>
-                    {post.images?.[0] ? (
-                      <Image source={post.images[0]} style={styles.postThumb} contentFit="cover" transition={150} />
-                    ) : null}
-                  </View>
+                    <View style={styles.postBody}>
+                      <Text style={styles.postText} numberOfLines={3}>
+                        {post.content}
+                      </Text>
+                      {post.images?.[0] ? (
+                        <Image source={post.images[0]} style={styles.postThumb} contentFit="cover" transition={150} />
+                      ) : null}
+                    </View>
+                  </Pressable>
+
                   <View style={styles.postStats}>
-                    <View style={styles.postStat}>
+                    <Pressable
+                      style={styles.postStat}
+                      hitSlop={10}
+                      onPress={() => like.mutate(post.id)}
+                    >
                       <Heart
                         size={20}
                         color={post.liked ? colors.error : colors.textSecondary}
                         fill={post.liked ? colors.error : 'transparent'}
                       />
                       <Text style={styles.postStatText}>{post.likes_count}</Text>
-                    </View>
-                    <View style={styles.postStat}>
+                    </Pressable>
+                    <Pressable
+                      style={styles.postStat}
+                      hitSlop={10}
+                      onPress={() => router.push({ pathname: '/community/[id]', params: { id: post.id } })}
+                    >
                       <MessageCircle size={20} color={colors.textSecondary} />
                       <Text style={styles.postStatText}>{post.comments_count}</Text>
-                    </View>
+                    </Pressable>
                   </View>
-                </Pressable>
+                </View>
               )}
             />
           </View>
@@ -349,8 +343,6 @@ export default function HomeScreen() {
           <Text style={styles.sectionEmpty}>{t('home.noArticles')}</Text>
         )}
       </ScrollView>
-
-      <NotificationsSheet visible={bellOpen} onClose={() => setBellOpen(false)} />
     </SafeAreaView>
   )
 }
@@ -368,28 +360,8 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginBottom: spacing.lg,
-  },
-  bellWrap: {
-    padding: 2,
-  },
-  bellBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#E02D2D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  bellBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
   greeting: {
     fontSize: 30,
@@ -624,6 +596,11 @@ const styles = StyleSheet.create({
   postGroup: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  // Fills the card above the stats row, so tapping anywhere on the card still
+  // opens the post the way it did when the whole card was one button.
+  postLink: {
+    flex: 1,
   },
   postBody: {
     flexDirection: 'row',

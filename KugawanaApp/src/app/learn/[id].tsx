@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { CartButton } from '../../components/CartButton'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { learnService } from '../../services/learn.service'
@@ -18,7 +19,7 @@ export default function ArticleScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: article.category }} />
+      <Stack.Screen options={{ headerShown: true, title: article.category, headerRight: () => <CartButton /> }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{article.title}</Text>
         <Text style={styles.body}>{plain}</Text>

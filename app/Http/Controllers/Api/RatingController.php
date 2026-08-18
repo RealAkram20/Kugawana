@@ -57,24 +57,32 @@ class RatingController extends Controller
         ], 201);
     }
 
-    /** Reviews left on a member's donations, newest first. */
+    /**
+     * Reviews left on a member's donations, newest first. The headline average
+     * and count come from every rating, not just the page below — otherwise a
+     * member past 50 reviews would show a different score here than on their
+     * profile.
+     */
     public function forMember(Request $request, User $member): JsonResponse
     {
-        $reviews = Rating::query()
+        $member->loadCount('ratingsReceived')->loadAvg('ratingsReceived', 'stars');
+
+        $reviews = $member->ratingsReceived()
             ->with('user')
-            ->whereHas('foodDonation', fn ($query) => $query->where('donor_id', $member->id))
-            ->latest()
+            ->latest('ratings.created_at')
             ->limit(50)
             ->get()
             ->map(fn (Rating $rating) => $this->present($rating));
 
+        $reviewsCount = (int) $member->ratings_received_count;
+
         return response()->json([
             'success' => true,
             'data' => [
-                'rating' => $reviews->count() > 0
-                    ? round($reviews->avg('stars'), 1)
+                'rating' => $reviewsCount > 0
+                    ? round((float) $member->ratings_received_avg_stars, 1)
                     : 0.0,
-                'reviews_count' => $reviews->count(),
+                'reviews_count' => $reviewsCount,
                 'reviews' => $reviews->values(),
             ],
             'message' => 'Reviews retrieved',

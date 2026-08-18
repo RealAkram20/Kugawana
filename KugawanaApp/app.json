@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Kugawana",
-    "slug": "rioakram",
+    "slug": "kugawana",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -17,9 +17,12 @@
         "backgroundImage": "./assets/images/android-icon-background.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.KugawanaApp",
+      "package": "app.kugawana",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -42,7 +45,30 @@
           "photosPermission": "Allow Kugawana to access your photos so you can add pictures of the food you are sharing."
         }
       ],
-      "expo-localization"
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "style": "dark"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Kugawana to use your location so it can fill in your district and address, and where food should be delivered."
+        }
+      ],
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#ec3013",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-secure-store",
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -51,9 +77,13 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "eed7fae5-5a88-4609-802e-c65790a21139"
+        "projectId": "0240c346-0c25-4689-8a91-d236a6ddd3a2"
+      },
+      "expo-navigation-bar": {
+        "enforceContrast": false,
+        "style": "dark"
       }
     },
-    "owner": "realakram20s-team"
+    "owner": "kugawanaapp"
   }
 }

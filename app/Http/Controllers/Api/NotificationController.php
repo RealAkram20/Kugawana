@@ -16,7 +16,13 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
+        // Unread first, then newest within each group — so anything the member
+        // has not opened yet sits at the top of the screen. reorder() clears the
+        // created_at ordering the notifications() relation applies by default,
+        // which would otherwise stay the primary sort and bury this clause.
         $notifications = $user->notifications()
+            ->reorder()
+            ->orderByRaw('read_at is null desc')
             ->latest()
             ->limit(self::PAGE)
             ->get()
@@ -75,6 +81,14 @@ class NotificationController extends Controller
             'token' => ['required', 'string', 'max:255'],
             'platform' => ['nullable', 'string', 'max:16'],
         ]);
+
+        // Tokens are unique per device, so a token already held by someone else
+        // means the handset changed hands. Drop the old row rather than moving
+        // it, so the previous owner's pending notifications never follow the
+        // token to its new account.
+        PushToken::where('token', $data['token'])
+            ->where('user_id', '!=', $request->user()->id)
+            ->delete();
 
         PushToken::updateOrCreate(
             ['token' => $data['token']],

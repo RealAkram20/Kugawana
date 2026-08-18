@@ -1,3 +1,4 @@
+import type { PickedImage } from '../types/food.types'
 import type { AuthResponse, User, UserRole } from '../types/user.types'
 import { api } from './api'
 
@@ -12,7 +13,20 @@ interface RegisterPayload {
   role?: UserRole
 }
 
+export interface GoogleAuthConfig {
+  enabled: boolean
+  web_client_id: string | null
+  android_client_id: string | null
+  ios_client_id: string | null
+}
+
 export const authService = {
+  /** Sign-in options the admin console controls; read fresh at launch. */
+  async config(): Promise<GoogleAuthConfig> {
+    const { data } = await api.get('/auth/config')
+    return data.data.google
+  },
+
   async register(payload: RegisterPayload): Promise<AuthResponse> {
     const { data } = await api.post('/auth/register', payload)
     return data.data
@@ -29,6 +43,30 @@ export const authService = {
     return data.data
   },
 
+  /** Ask the server to email a fresh verification link. */
+  async resendVerification(email: string): Promise<void> {
+    await api.post('/auth/email/resend', { email })
+  },
+
+  /** Emails a 6-digit reset code; the server answers the same whether or not the account exists. */
+  async forgotPassword(email: string): Promise<void> {
+    await api.post('/auth/forgot-password', { email })
+  },
+
+  async resetPassword(email: string, code: string, password: string): Promise<void> {
+    await api.post('/auth/reset-password', {
+      email,
+      code,
+      password,
+      password_confirmation: password,
+    })
+  },
+
+  /** Permanently deletes the signed-in account; the server anonymises history. */
+  async deleteAccount(): Promise<void> {
+    await api.delete('/profile')
+  },
+
   async logout(): Promise<void> {
     await api.post('/auth/logout')
   },
@@ -38,8 +76,32 @@ export const authService = {
     return data.data
   },
 
-  async updateProfile(payload: Partial<User>): Promise<User> {
-    const { data } = await api.put('/profile', payload)
+  /**
+   * Sends JSON normally. When a new avatar is attached the whole payload has to
+   * go up as multipart instead — and since PHP does not parse multipart bodies on
+   * PUT, it goes out as a POST carrying `_method=PUT`, the same trick the food
+   * service uses for listing photos.
+   */
+  async updateProfile(payload: Partial<User>, photo?: PickedImage | null): Promise<User> {
+    if (!photo) {
+      const { data } = await api.put('/profile', payload)
+      return data.data
+    }
+
+    const form = new FormData()
+
+    for (const [key, value] of Object.entries(payload)) {
+      if (value === undefined || value === null) continue
+      form.append(key, String(value))
+    }
+
+    // React Native's FormData takes this {uri, name, type} shape directly.
+    form.append('profile_photo', photo as unknown as Blob)
+    form.append('_method', 'PUT')
+
+    const { data } = await api.post('/profile', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     return data.data
   },
 }

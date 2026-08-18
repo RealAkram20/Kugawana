@@ -15,7 +15,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CategoryPill } from '../../components/food/CategoryPill'
 import { PhotoPicker } from '../../components/food/PhotoPicker'
 import { Input } from '../../components/ui/Input'
@@ -44,6 +44,7 @@ const WINDOWS = [
 export default function ShareScreen() {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
 
   const { control, handleSubmit, reset } = useForm<ShareForm>({
     defaultValues: {
@@ -231,7 +232,7 @@ export default function ShareScreen() {
           />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           <Pressable
             disabled={donate.isPending}
             onPress={submit}

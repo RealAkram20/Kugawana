@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Console;
 
 use App\Http\Controllers\Controller;
+use App\Models\MailSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -27,10 +29,28 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials, true)) {
-            if (! Auth::user()->isAdmin() || ! Auth::user()->is_active) {
+            $user = Auth::user();
+
+            if (! $user->isAdmin() || ! $user->is_active) {
                 Auth::logout();
 
                 return back()->withErrors(['email' => 'This account does not have admin access'])->onlyInput('email');
+            }
+
+            // Admin verification gate: send a fresh link and hold them at the login
+            // screen until the address is confirmed.
+            if (MailSetting::current()->requiresVerification($user) && ! $user->hasVerifiedEmail()) {
+                try {
+                    $user->sendEmailVerificationNotification();
+                } catch (\Throwable $e) {
+                    Log::error('Admin verification email failed', ['user' => $user->id, 'error' => $e->getMessage()]);
+                }
+
+                Auth::logout();
+
+                return back()
+                    ->withErrors(['email' => 'Verify your email to continue — we sent a link to ' . $user->email])
+                    ->onlyInput('email');
             }
 
             $request->session()->regenerate();

@@ -4,10 +4,11 @@ import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect } from 'react'
 import { View } from 'react-native'
+import { CartSheet } from '../components/CartSheet'
 import i18n from '../locales/i18n'
 import { useAppStore } from '../stores/app.store'
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30_000 },
   },
@@ -38,6 +39,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
         </Stack>
+        {/* Mounted once so any screen's basket button opens the same popup. */}
+        <CartSheet />
       </View>
     </QueryClientProvider>
   )

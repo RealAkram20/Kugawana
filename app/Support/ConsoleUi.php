@@ -7,8 +7,8 @@ class ConsoleUi
     public static function tagClass(string $status): string
     {
         return match (strtolower($status)) {
-            'pending', 'flagged', 'out for delivery' => 'tag-accent',
-            'reviewed', 'rejected', 'cancelled', 'suspended', 'scheduled', 'draft', 'off', 'hidden', 'disabled' => 'tag-outline',
+            'pending', 'flagged', 'out for delivery', 'new' => 'tag-accent',
+            'reviewed', 'rejected', 'cancelled', 'suspended', 'scheduled', 'draft', 'off', 'hidden', 'disabled', 'closed' => 'tag-outline',
             default => 'tag-neutral',
         };
     }

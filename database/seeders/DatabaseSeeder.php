@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => UserRole::SuperAdmin,
                 'is_active' => true,
+                'email_verified_at' => now(),
             ]
         );
 
@@ -38,6 +39,7 @@ class DatabaseSeeder extends Seeder
                 'role' => UserRole::CountryAdmin,
                 'country_id' => $uganda->id,
                 'is_active' => true,
+                'email_verified_at' => now(),
             ]
         );
 
@@ -97,6 +99,10 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+
+        // Help & Support content — all of it editable from the admin panel.
+        $this->call(CountrySeeder::class);
+        $this->call(SupportSeeder::class);
 
         // Demo listings, articles, posts and photos for the mobile app.
         $this->call(DemoContentSeeder::class);

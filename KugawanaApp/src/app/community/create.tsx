@@ -14,11 +14,13 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PhotoPicker } from '../../components/food/PhotoPicker'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
 import { communityService } from '../../services/community.service'
 import type { PostType } from '../../types/community.types'
+import type { PickedImage } from '../../types/food.types'
 
 const LOCATIONS = ['Kampala, Uganda', 'Nairobi, Kenya', 'Mombasa, Kenya', 'Kisumu, Kenya', 'Nakuru, Kenya']
 
@@ -30,6 +32,7 @@ const TYPES: { key: PostType; Icon: typeof ShoppingBag }[] = [
 
 export default function CreatePostScreen() {
   const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
 
   const [type, setType] = useState<PostType>('request')
@@ -37,6 +40,7 @@ export default function CreatePostScreen() {
   const [quantity, setQuantity] = useState('')
   const [location, setLocation] = useState(LOCATIONS[0])
   const [details, setDetails] = useState('')
+  const [images, setImages] = useState<PickedImage[]>([])
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const labelKey = { request: 'needLabel', offer: 'offerLabel', discussion: 'topicLabel' }[type]
@@ -56,7 +60,7 @@ export default function CreatePostScreen() {
 
   const post = useMutation({
     mutationFn: () =>
-      communityService.post({ content: buildContent(), post_type: type, location }),
+      communityService.post({ content: buildContent(), post_type: type, location, images }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community'] })
       Alert.alert(t('common.appName'), t('createPost.posted'))
@@ -130,6 +134,9 @@ export default function CreatePostScreen() {
             </>
           )}
 
+          <Text style={styles.label}>{t('createPost.photos')}</Text>
+          <PhotoPicker value={images} onChange={setImages} max={4} />
+
           <Text style={styles.label}>{t('createPost.location')}</Text>
           <Pressable style={styles.locationField} onPress={() => setPickerOpen((open) => !open)}>
             <MapPin size={20} color={colors.textPrimary} strokeWidth={2} />
@@ -165,7 +172,7 @@ export default function CreatePostScreen() {
           />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           <Pressable
             onPress={submit}
             disabled={post.isPending}

@@ -113,6 +113,18 @@ a { color: var(--color-accent); text-underline-offset: 3px; }
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
 
+/* Wraps a password input so the show/hide button can sit inside its right edge. */
+.password-field { position: relative; display: block; }
+.password-field .input { padding-right: 58px; }
+.password-field > .password-toggle {
+  position: absolute; right: 1px; top: 1px; bottom: 1px;
+  display: flex; align-items: center; padding: 0 10px;
+  font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--color-accent); background: none; border: 0; cursor: pointer;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.password-field > .password-toggle:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+
 .tag {
   display: inline-flex; align-items: center; font-size: 11px;
   letter-spacing: 0.02em; padding: 3px 10px; white-space: nowrap;
@@ -168,6 +180,12 @@ a { color: var(--color-accent); text-underline-offset: 3px; }
 .nav-item.active { background: var(--color-accent); color: var(--color-bg); }
 .nav-item.active:hover { background: var(--color-accent); }
 .nav-item svg { flex: 0 0 auto; display: block; }
+.nav-badge {
+  margin-left: auto; min-width: 20px; padding: 1px 6px; border-radius: 10px;
+  background: var(--color-accent); color: var(--color-bg);
+  font-size: 11px; font-weight: 700; text-align: center;
+}
+.nav-item.active .nav-badge { background: var(--color-bg); color: var(--color-accent); }
 
 .sidebar-foot { border-top: 2px solid var(--color-divider); padding: 10px 8px; flex: none; }
 .sidebar-foot .nav-item { color: var(--color-accent-700); }

@@ -69,7 +69,7 @@ export default function MemberProfileScreen() {
             <Star size={20} color={colors.accent} fill={colors.accent} strokeWidth={0} />
             <Text style={styles.rating}>{member.rating.toFixed(1)}</Text>
             <Text style={styles.reviews}>
-              ({member.reviews_count} {t('member.reviews')})
+              ({t('member.reviews', { count: member.reviews_count })})
             </Text>
           </View>
 

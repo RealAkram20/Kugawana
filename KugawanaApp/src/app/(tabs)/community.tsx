@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Heart, MapPin, MessageCircle, Plus, Search, Settings } from 'lucide-react-native'
@@ -8,6 +8,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View 
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors } from '../../constants/colors'
 import { spacing } from '../../constants/spacing'
+import { useLikePost } from '../../hooks/useLikePost'
 import { communityService } from '../../services/community.service'
 import type { CommunityPost, FeedFilter } from '../../types/community.types'
 
@@ -15,7 +16,6 @@ const FILTERS: FeedFilter[] = ['all', 'request', 'offer', 'discussion']
 
 export default function CommunityScreen() {
   const { t } = useTranslation()
-  const queryClient = useQueryClient()
 
   const [filter, setFilter] = useState<FeedFilter>('all')
   const [search, setSearch] = useState('')
@@ -31,10 +31,7 @@ export default function CommunityScreen() {
     queryFn: () => communityService.feed({ type: filter, q: debouncedSearch }),
   })
 
-  const like = useMutation({
-    mutationFn: (postId: number) => communityService.like(postId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['community'] }),
-  })
+  const like = useLikePost()
 
   const openPost = (id: number) => router.push({ pathname: '/community/[id]', params: { id } })
 

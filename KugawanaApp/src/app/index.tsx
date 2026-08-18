@@ -26,6 +26,7 @@ export default function Splash() {
   const queryClient = useQueryClient()
   const hydrated = useAuthStore((state) => state.hydrated)
   const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
   const [ready, setReady] = useState(false)
   const [dataWarm, setDataWarm] = useState(false)
 
@@ -68,11 +69,13 @@ export default function Splash() {
   useEffect(() => {
     if (!ready || !hydrated || !dataWarm) return
     if (token) {
-      router.replace('/(tabs)')
+      // A Google sign-up that quit before adding a phone number resumes on the
+      // phone screen, not the tabs — the number is required, not optional.
+      router.replace(user && !user.phone ? '/(auth)/phone' : '/(tabs)')
     } else {
       router.replace('/(auth)/language')
     }
-  }, [ready, hydrated, dataWarm, token])
+  }, [ready, hydrated, dataWarm, token, user])
 
   return (
     <View style={styles.container}>

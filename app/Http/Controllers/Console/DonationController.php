@@ -3,12 +3,22 @@
 namespace App\Http\Controllers\Console;
 
 use App\Enums\FoodStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Console\Concerns\ScopesCountry;
 use App\Http\Controllers\Controller;
+use App\Models\Country;
+use App\Models\FoodCategory;
 use App\Models\FoodDonation;
+use App\Models\Unit;
+use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\FoodSplitService;
+use App\Services\RewardService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -25,6 +35,18 @@ class DonationController extends Controller
     private function guardScope(FoodDonation $donation): void
     {
         abort_if($this->countryId() && $donation->country_id !== $this->countryId(), 403);
+    }
+
+    /**
+     * A donation may only be stored in a live warehouse the admin can actually
+     * reach. Without the country clause a posted id could file food into
+     * another country's store, leaking its address and inflating its stock.
+     */
+    private function warehouseRule(): Exists
+    {
+        return Rule::exists('warehouses', 'id')->where(fn ($query) => $query
+            ->where('is_active', true)
+            ->when($this->countryId(), fn ($scoped) => $scoped->where('country_id', $this->countryId())));
     }
 
     public function index(Request $request): View
@@ -57,7 +79,7 @@ class DonationController extends Controller
     {
         $this->guardScope($donation);
 
-        $donation->load(['donor', 'category', 'warehouse', 'unit']);
+        $donation->load(['donor', 'category', 'warehouse', 'unit', 'splitter']);
 
         $stepNames = [FoodStatus::Pending, FoodStatus::Reviewed, FoodStatus::Approved, FoodStatus::Collected, FoodStatus::Stored, FoodStatus::Published];
         $current = array_search($donation->status, $stepNames, true);
@@ -76,7 +98,344 @@ class DonationController extends Controller
             'stepNames' => $stepNames,
             'current' => $current,
             'warehouses' => $warehouses,
+            'sources' => $this->sources($donation),
         ]);
+    }
+
+    /** Photos are stored beside every other food image, on the public disk. */
+    private const MAX_IMAGES = 5;
+
+    /**
+     * The form for food that arrives outside the app — agencies and NGOs
+     * hand over stock without ever creating an account, so an admin records
+     * it here and credits whoever brought it in.
+     */
+    public function create(): View
+    {
+        return view('console.donations.create', [
+            'title' => 'Add food',
+            'categories' => FoodCategory::where('is_active', true)->orderBy('name')->get(),
+            'units' => Unit::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'warehouses' => Warehouse::where('is_active', true)
+                ->when($this->countryId(), fn ($q) => $q->where('country_id', $this->countryId()))
+                ->orderBy('name')
+                ->get(),
+            'donors' => User::whereIn('role', [UserRole::Donor, UserRole::Receiver])
+                ->when($this->countryId(), fn ($q) => $q->where('country_id', $this->countryId()))
+                ->orderBy('name')
+                ->get(['id', 'name', 'phone']),
+            'countries' => Country::where('is_active', true)
+                ->when($this->countryId(), fn ($q) => $q->whereKey($this->countryId()))
+                ->orderBy('name')
+                ->get(),
+        ]);
+    }
+
+    public function store(Request $request, FoodSplitService $splitter): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'food_category_id' => ['required', 'exists:food_categories,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:999999'],
+            'unit_id' => ['required', Rule::exists('units', 'id')->where('is_active', true)],
+            'preparation_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'expiry_date' => ['required', 'date', 'after:now'],
+            'pickup_address' => ['nullable', 'string', 'max:255'],
+            'contact_number' => ['nullable', 'string', 'max:30'],
+            'special_instructions' => ['nullable', 'string'],
+            'warehouse_id' => ['nullable', $this->warehouseRule()],
+            'country_id' => ['required', Rule::exists('countries', 'id')->where('is_active', true)],
+            'points_required' => ['required', 'integer', 'min:0'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'images' => ['nullable', 'array', 'max:'.self::MAX_IMAGES],
+            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'donor_id' => ['nullable', 'exists:users,id'],
+            'donor_name' => ['nullable', 'string', 'max:255'],
+            'donor_phone' => ['nullable', 'string', 'max:30', Rule::unique('users', 'phone')],
+            'donor_email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')],
+            'action' => ['required', 'in:approve,publish'],
+        ]);
+
+        if ($this->countryId()) {
+            $data['country_id'] = $this->countryId();
+        }
+
+        $donor = $this->resolveDonor($data, (int) $data['country_id'], $splitter);
+
+        if (! $donor) {
+            return back()->withInput()->withErrors([
+                'donor_id' => 'Pick an existing member, or enter the agency or NGO the food came from.',
+            ]);
+        }
+
+        if ($data['action'] === 'publish' && (int) $data['points_required'] < 1) {
+            return back()->withInput()->withErrors([
+                'points_required' => 'A published listing needs points above zero — or save it as approved and publish later.',
+            ]);
+        }
+
+        $images = collect($request->file('images') ?? [])
+            ->take(self::MAX_IMAGES)
+            ->map(fn ($file) => $file->store('food', 'public'))
+            ->values()
+            ->all();
+
+        $donation = FoodDonation::create([
+            'donor_id' => $donor->id,
+            'food_category_id' => $data['food_category_id'],
+            'warehouse_id' => $data['warehouse_id'] ?? null,
+            'country_id' => $data['country_id'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'amount' => $data['amount'],
+            'unit_id' => $data['unit_id'],
+            'preparation_date' => $data['preparation_date'] ?? null,
+            'expiry_date' => $data['expiry_date'],
+            'pickup_address' => $data['pickup_address'] ?? null,
+            'contact_number' => $data['contact_number'] ?? null,
+            'special_instructions' => $data['special_instructions'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'images' => $images,
+            'points_required' => $data['points_required'],
+            'status' => $data['action'] === 'publish' ? FoodStatus::Published : FoodStatus::Approved,
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('console.donations.show', $donation)
+            ->with('toast', $data['action'] === 'publish'
+                ? "{$donation->title} is live"
+                : "{$donation->title} added — publish it when it is ready");
+    }
+
+    /**
+     * A typed-in agency wins over a picked member, mirroring the split flow:
+     * the admin can record a walk-in NGO without leaving the form. The created
+     * row has no password, so it can never be signed into.
+     */
+    private function resolveDonor(array $data, int $countryId, FoodSplitService $splitter): ?User
+    {
+        if (! empty($data['donor_name'])) {
+            return $splitter->createSource([
+                'name' => $data['donor_name'],
+                'phone' => $data['donor_phone'] ?? null,
+                'email' => $data['donor_email'] ?? null,
+                'country_id' => $countryId,
+            ], $this->countryId());
+        }
+
+        if (empty($data['donor_id'])) {
+            return null;
+        }
+
+        $donor = User::find($data['donor_id']);
+
+        // A country admin can only credit food to members of their own country.
+        abort_if($donor && $this->countryId() && $donor->country_id !== $this->countryId(), 403);
+
+        return $donor;
+    }
+
+    /**
+     * The full editor. Anyone can mislabel, misjudge a quantity or upload a
+     * blurry photo, so the admin needs to fix every field a donor filled in
+     * before the listing goes public.
+     */
+    public function edit(FoodDonation $donation): View
+    {
+        $this->guardScope($donation);
+
+        $donation->load(['donor', 'category', 'unit', 'warehouse']);
+
+        return view('console.donations.edit', [
+            'title' => 'Edit food',
+            'donation' => $donation,
+            'categories' => FoodCategory::where('is_active', true)->orderBy('name')->get(),
+            'units' => Unit::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'warehouses' => Warehouse::where('is_active', true)
+                ->when($this->countryId(), fn ($q) => $q->where('country_id', $this->countryId()))
+                ->orderBy('name')
+                ->get(),
+        ]);
+    }
+
+    /**
+     * Saves every field the donor could have got wrong. The food stays credited
+     * to the donor; only its presentation and logistics change.
+     */
+    public function update(Request $request, FoodDonation $donation): RedirectResponse
+    {
+        $this->guardScope($donation);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'food_category_id' => ['required', 'exists:food_categories,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:999999'],
+            'unit_id' => ['required', Rule::exists('units', 'id')->where('is_active', true)],
+            'preparation_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'expiry_date' => ['required', 'date'],
+            'pickup_address' => ['nullable', 'string', 'max:255'],
+            'contact_number' => ['nullable', 'string', 'max:30'],
+            'special_instructions' => ['nullable', 'string'],
+            'warehouse_id' => ['nullable', $this->warehouseRule()],
+            'points_required' => ['required', 'integer', 'min:0'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'remove_images' => ['nullable', 'array'],
+            'remove_images.*' => ['string'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+        ]);
+
+        // A split batch already sized its units against the old amount, so
+        // changing the whole out from under them would leave the counts wrong.
+        if ($donation->isSplit() && (float) $data['amount'] !== (float) $donation->amount) {
+            return back()->withInput()->with('toast', 'Undo the split before changing the total quantity');
+        }
+
+        $images = $this->reconcileImages($request, $donation, $data['remove_images'] ?? []);
+
+        $donation->update([
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'food_category_id' => $data['food_category_id'],
+            'amount' => $data['amount'],
+            'unit_id' => $data['unit_id'],
+            'preparation_date' => $data['preparation_date'] ?? null,
+            'expiry_date' => $data['expiry_date'],
+            'pickup_address' => $data['pickup_address'] ?? null,
+            'contact_number' => $data['contact_number'] ?? null,
+            'special_instructions' => $data['special_instructions'] ?? null,
+            'warehouse_id' => $data['warehouse_id'] ?? null,
+            'points_required' => $data['points_required'],
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'images' => $images,
+        ]);
+
+        return redirect()
+            ->route('console.donations.show', $donation)
+            ->with('toast', "{$donation->title} updated");
+    }
+
+    /**
+     * Drops the photos the admin unchecked, appends any new uploads, and keeps
+     * the gallery within its cap. Removed files leave the disk so nothing is
+     * orphaned.
+     *
+     * @return array<int, string>
+     */
+    private function reconcileImages(Request $request, FoodDonation $donation, array $remove): array
+    {
+        // Only ever delete paths this donation actually owns. The form posts its
+        // own image paths, but the request is not trustworthy: an arbitrary path
+        // here would otherwise delete any file on the public disk — the site
+        // logo, an article cover, another country's photos.
+        $remove = array_values(array_intersect($remove, $donation->images ?? []));
+
+        $kept = collect($donation->images ?? [])->reject(fn ($path) => in_array($path, $remove, true));
+
+        foreach ($remove as $path) {
+            Storage::disk('public')->delete($path);
+        }
+
+        $added = collect($request->file('images') ?? [])
+            ->map(fn ($file) => $file->store('food', 'public'));
+
+        return $kept->merge($added)->take(self::MAX_IMAGES)->values()->all();
+    }
+
+    /**
+     * People the food can be credited to. Admins are left out because the
+     * credit belongs to whoever actually brought the food in, and the current
+     * donor is always included so the picker never silently reassigns them.
+     */
+    private function sources(FoodDonation $donation)
+    {
+        return User::query()
+            ->where(fn ($q) => $q
+                ->whereKey($donation->donor_id)
+                ->orWhere(fn ($others) => $others
+                    ->whereIn('role', [UserRole::Donor, UserRole::Receiver])
+                    ->when($this->countryId(), fn ($scoped) => $scoped->where('country_id', $this->countryId()))))
+            ->orderBy('name')
+            ->get(['id', 'name', 'phone']);
+    }
+
+    /**
+     * Cuts a bulk donation into units a household can finish, so a 10 Kg sack
+     * does not have to go to one person or go to waste.
+     */
+    public function split(Request $request, FoodDonation $donation, FoodSplitService $splitter): RedirectResponse
+    {
+        $this->guardScope($donation);
+
+        $data = $request->validate([
+            'unit_amount' => ['required', 'numeric', 'min:0.01', 'max:'.$donation->amount],
+            'points_required' => ['required', 'integer', 'min:0'],
+            'source_id' => ['nullable', 'exists:users,id'],
+            'source_name' => ['nullable', 'string', 'max:255'],
+            'source_phone' => ['nullable', 'string', 'max:30', Rule::unique('users', 'phone')],
+            'source_email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')],
+        ]);
+
+        $source = $this->resolveSource($data, $donation, $splitter);
+
+        $splitter->split(
+            $donation,
+            (float) $data['unit_amount'],
+            (int) $data['points_required'],
+            auth()->user(),
+            $source,
+        );
+
+        return back()->with('toast', "{$donation->title} split into {$donation->units_total} units");
+    }
+
+    public function unsplit(FoodDonation $donation, FoodSplitService $splitter): RedirectResponse
+    {
+        $this->guardScope($donation);
+
+        if ($donation->unitsClaimed() > 0) {
+            return back()->with('toast', 'Units have already been claimed, so this split cannot be undone');
+        }
+
+        $splitter->unsplit($donation);
+
+        return back()->with('toast', "{$donation->title} is back to a single listing");
+    }
+
+    /**
+     * A named source wins over a picked one, so an admin can type in a walk in
+     * donor who has no account yet without first leaving this screen.
+     */
+    private function resolveSource(array $data, FoodDonation $donation, FoodSplitService $splitter): ?User
+    {
+        if (! empty($data['source_name'])) {
+            return $splitter->createSource([
+                'name' => $data['source_name'],
+                'phone' => $data['source_phone'] ?? null,
+                'email' => $data['source_email'] ?? null,
+                'country_id' => $donation->country_id,
+            ], $this->countryId());
+        }
+
+        if (empty($data['source_id'])) {
+            return null;
+        }
+
+        // Same guard as resolveDonor(): credit can only go to a member of the
+        // admin's own country, and never to another admin account.
+        $source = User::whereIn('role', [UserRole::Donor, UserRole::Receiver])->find($data['source_id']);
+
+        abort_if(! $source || ($this->countryId() && $source->country_id !== $this->countryId()), 403);
+
+        return $source;
     }
 
     public function approve(Request $request, FoodDonation $donation): RedirectResponse
@@ -84,7 +443,7 @@ class DonationController extends Controller
         $this->guardScope($donation);
 
         $data = $request->validate([
-            'warehouse_id' => ['nullable', 'exists:warehouses,id'],
+            'warehouse_id' => ['nullable', $this->warehouseRule()],
             'points_required' => ['required', 'integer', 'min:0'],
         ]);
 
@@ -95,6 +454,15 @@ class DonationController extends Controller
             'approved_by' => auth()->id(),
             'approved_at' => now(),
         ]);
+
+        // Donation campaigns pay here, on admin approval, because this is the
+        // only moment the food is verifiably real. The donor-side "complete"
+        // can't award: it is only reachable before approval, so paying there
+        // would reward listings that never handed anything over. The
+        // reward reference is per-listing, so re-approving never pays twice.
+        if ($donation->donor) {
+            app(RewardService::class)->award($donation->donor, 'donation', 'donation:' . $donation->id);
+        }
 
         return redirect()->route('console.donations.index')->with('toast', "{$donation->title} approved");
     }
@@ -147,10 +515,11 @@ class DonationController extends Controller
 
         return response()->streamDownload(function () use ($donations) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['ID', 'Title', 'Donor', 'Category', 'Quantity', 'District', 'Status', 'Points', 'Expiry', 'Submitted']);
+            fputcsv($out, ['ID', 'Title', 'Donor', 'Category', 'Quantity', 'Unit size', 'Units left', 'District', 'Status', 'Points', 'Expiry', 'Submitted']);
             foreach ($donations as $d) {
                 fputcsv($out, [
                     $d->id, $d->title, $d->donor?->name, $d->category?->name, $d->quantity,
+                    $d->unit_quantity ?: '—', $d->isSplit() ? "{$d->units_available} of {$d->units_total}" : '—',
                     $d->pickup_address, $d->status->value, $d->points_required,
                     $d->expiry_date?->toDateTimeString(), $d->created_at->toDateTimeString(),
                 ]);

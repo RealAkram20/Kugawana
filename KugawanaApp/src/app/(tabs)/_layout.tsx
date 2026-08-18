@@ -64,9 +64,16 @@ function TabBar({ state, descriptors, navigation }: TabBarProps) {
 export default function TabsLayout() {
   const { t } = useTranslation()
   const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
   const hydrated = useAuthStore((state) => state.hydrated)
 
   if (hydrated && !token) return <Redirect href="/(auth)/register" />
+
+  // A Google sign-up owes us a phone number before it can use the app. The
+  // splash checks this too, but a deep link opens the tabs without passing
+  // through it, so the requirement is enforced here as well.
+  if (hydrated && token && user && !user.phone) return <Redirect href="/(auth)/phone" />
+
 
   return (
     <Tabs

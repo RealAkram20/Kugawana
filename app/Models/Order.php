@@ -13,8 +13,10 @@ class Order extends Model
     protected $fillable = [
         'receiver_id',
         'food_donation_id',
+        'group_id',
         'status',
         'points_spent',
+        'units',
         'delivery_method',
         'delivery_address',
         'preferred_quantity',
@@ -26,6 +28,7 @@ class Order extends Model
 
     protected $casts = [
         'status' => OrderStatus::class,
+        'units' => 'integer',
         'scheduled_pickup_at' => 'datetime',
         'need_by' => 'datetime',
         'completed_at' => 'datetime',

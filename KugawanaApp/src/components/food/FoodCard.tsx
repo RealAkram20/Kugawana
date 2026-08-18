@@ -30,8 +30,13 @@ export function FoodCard({ food, onPress, style }: FoodCardProps) {
           {food.title}
         </Text>
         <Text style={styles.meta} numberOfLines={1} maxFontSizeMultiplier={1.3}>
-          {food.category?.name ?? ''} · {food.quantity}
+          {food.category?.name ?? ''} · {food.is_split ? food.unit_quantity : food.quantity}
         </Text>
+        {food.is_split ? (
+          <Text style={styles.stock} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+            {food.units_available} of {food.units_total} left
+          </Text>
+        ) : null}
         <Badge label={`${food.points_required} pts`} tone="accent" />
         <Text style={styles.address} numberOfLines={1} maxFontSizeMultiplier={1.3}>
           {food.pickup_address ?? ''}
@@ -78,6 +83,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
+    marginBottom: spacing.sm,
+  },
+  stock: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+    marginTop: -spacing.sm + 2,
     marginBottom: spacing.sm,
   },
   address: {

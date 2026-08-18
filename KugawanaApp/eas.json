@@ -16,17 +16,18 @@
     },
     "preview": {
       "distribution": "internal",
+      "autoIncrement": true,
       "android": {
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.138/Kugawana/api"
+        "EXPO_PUBLIC_API_URL": "https://kugawana.app/api"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-DOMAIN/api"
+        "EXPO_PUBLIC_API_URL": "https://kugawana.app/api"
       }
     }
   },

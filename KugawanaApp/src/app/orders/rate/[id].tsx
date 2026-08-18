@@ -16,7 +16,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '../../../constants/colors'
 import { spacing } from '../../../constants/spacing'
 import { ordersService } from '../../../services/orders.service'
@@ -27,6 +27,7 @@ export default function RateOrderScreen() {
   const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
   const orderId = Number(id)
 
   const [stars, setStars] = useState(0)
@@ -134,7 +135,7 @@ export default function RateOrderScreen() {
           />
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
           <Pressable
             disabled={stars === 0 || submit.isPending}
             style={({ pressed }) => [

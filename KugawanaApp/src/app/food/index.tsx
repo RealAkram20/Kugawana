@@ -5,6 +5,7 @@ import { Search } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { CartButton } from '../../components/CartButton'
 import { CategoryPill } from '../../components/food/CategoryPill'
 import { FoodCard } from '../../components/food/FoodCard'
 import { colors } from '../../constants/colors'
@@ -51,7 +52,9 @@ export default function FoodBrowseScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: t('food.browse') }} />
+      <Stack.Screen
+        options={{ headerShown: true, title: t('food.browse'), headerRight: () => <CartButton /> }}
+      />
       <View style={styles.searchSection}>
         <View style={styles.searchWrap}>
           <Search size={18} color={colors.textMuted} />

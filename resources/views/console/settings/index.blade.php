@@ -12,7 +12,7 @@
           <tr>
             <td style="font-weight:600">{{ number_format($p->points) }}</td>
             <td>{{ $p->currency }} {{ number_format((float) $p->price) }}</td>
-            <td style="text-align:right"><a class="btn btn-ghost" href="{{ url('backoffice/super-admin/point-packages/' . $p->id . '/edit') }}">Edit</a></td>
+            <td style="text-align:right"><a class="btn btn-ghost" href="{{ route('console.wallet.packages.edit', $p) }}">Edit</a></td>
           </tr>
         @endforeach
       </tbody>
@@ -26,8 +26,58 @@
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
           <div style="flex:1;font-size:14px;font-weight:600">{{ $g['name'] }}</div>
           <span class="tag {{ $g['status'] === 'Active' ? 'tag-accent' : 'tag-outline' }}">{{ $g['status'] }}</span>
+          @if (! empty($g['route']))
+            <a class="btn btn-ghost" href="{{ $g['route'] }}">Configure</a>
+          @endif
         </div>
       @endforeach
+    </div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+      <h5 style="margin:0;flex:1">Email &amp; verification</h5>
+      <a class="btn btn-ghost" href="{{ $mail['route'] }}">Configure</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
+      <div style="flex:1;font-size:14px;font-weight:600">SMTP server</div>
+      <span class="tag {{ $mail['smtp'] === 'Configured' ? 'tag-accent' : 'tag-outline' }}">{{ $mail['smtp'] }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
+      <div style="flex:1;font-size:14px;font-weight:600">Verify members</div>
+      <span class="tag {{ $mail['verifyUsers'] ? 'tag-accent' : 'tag-outline' }}">{{ $mail['verifyUsers'] ? 'On' : 'Off' }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+      <div style="flex:1;font-size:14px;font-weight:600">Verify admins</div>
+      <span class="tag {{ $mail['verifyAdmins'] ? 'tag-accent' : 'tag-outline' }}">{{ $mail['verifyAdmins'] ? 'On' : 'Off' }}</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+      <h5 style="margin:0;flex:1">Sign-in methods</h5>
+      <a class="btn btn-ghost" href="{{ $google['route'] }}">Configure</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+      <div style="flex:1;font-size:14px;font-weight:600">Google sign-in</div>
+      <span class="tag {{ $google['status'] === 'Active' ? 'tag-accent' : 'tag-outline' }}">{{ $google['status'] }}</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+      <h5 style="margin:0;flex:1">Logo &amp; favicon</h5>
+      <a class="btn btn-ghost" href="{{ route('console.settings.branding.edit') }}">Configure</a>
+    </div>
+    <p class="text-muted" style="font-size:13px;margin-bottom:14px">The logo and browser-tab icon used across the console and sign-in page.</p>
+    @php $branding = App\Models\BrandingSetting::current(); @endphp
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-divider)">
+      <div style="flex:1;font-size:14px;font-weight:600">Logo</div>
+      <span class="tag {{ $branding->logo_path ? 'tag-accent' : 'tag-outline' }}">{{ $branding->logo_path ? 'Custom' : 'Built-in' }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+      <div style="flex:1;font-size:14px;font-weight:600">Favicon</div>
+      <span class="tag {{ $branding->favicon_path ? 'tag-accent' : 'tag-outline' }}">{{ $branding->favicon_path ? 'Custom' : 'Default' }}</span>
     </div>
   </div>
 
@@ -38,6 +88,7 @@
       <span class="tag tag-accent">English</span>
       <span class="tag tag-neutral">Swahili</span>
       <span class="tag tag-neutral">Français</span>
+      <span class="tag tag-neutral">العربية</span>
     </div>
   </div>
 

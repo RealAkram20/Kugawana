@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "927137805356",
+    "project_id": "kugawana-7041e",
+    "storage_bucket": "kugawana-7041e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:927137805356:android:717025adfb415360698d89",
+        "android_client_info": {
+          "package_name": "app.kugawana"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "927137805356-hiv38t7mnckb9616cafjfmoc29gn597l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYZiA_7cyTGwykmm7Ec7ykMAXYp4BozCY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "927137805356-hiv38t7mnckb9616cafjfmoc29gn597l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:927137805356:android:a18f6116382af7c4698d89",
+        "android_client_info": {
+          "package_name": "com.anonymous.KugawanaApp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "927137805356-hiv38t7mnckb9616cafjfmoc29gn597l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYZiA_7cyTGwykmm7Ec7ykMAXYp4BozCY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "927137805356-hiv38t7mnckb9616cafjfmoc29gn597l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

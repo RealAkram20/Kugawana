@@ -27,12 +27,23 @@
   <div class="panel-table">
     <h5 style="margin:14px 0 4px">Top donors</h5>
     <table class="table">
-      <thead><tr><th>Donor</th><th>Donations</th></tr></thead>
+      <thead><tr><th>Donor</th><th>Donations</th><th>Rating</th></tr></thead>
       <tbody>
         @forelse ($topDonors as $d)
-          <tr><td style="font-weight:600">{{ $d->name }}</td><td>{{ $d->donations_count }}</td></tr>
+          <tr>
+            <td style="font-weight:600">{{ $d->name }}</td>
+            <td>{{ $d->donations_count }}</td>
+            <td>
+              @if ($d->ratings_received_count > 0)
+                {{ number_format((float) $d->ratings_received_avg_stars, 1) }}
+                <span class="text-muted">({{ $d->ratings_received_count }})</span>
+              @else
+                <span class="text-muted">—</span>
+              @endif
+            </td>
+          </tr>
         @empty
-          <tr><td colspan="2" class="text-muted">No donors yet</td></tr>
+          <tr><td colspan="3" class="text-muted">No donors yet</td></tr>
         @endforelse
       </tbody>
     </table>
